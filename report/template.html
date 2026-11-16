@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LOLDOV 분석 리포트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f3f2ec;
+  --surface: #fcfcfb;
+  --surface-2: #ebeae3;
+  --line: #d9d8d0;
+  --text: #13262c;
+  --text-2: #4d5a5e;
+  --text-3: #7a8588;
+  --accent: #0e7c66;
+  --accent-ink: #ffffff;
+  --blue: #2a78d6;
+  --red: #e34948;
+  --signal: #6250d6;
+  --band: rgba(19, 38, 44, 0.07);
+  --band-hover: rgba(14, 124, 102, 0.16);
+  --hero-bg: #0a151b;
+  --hero-text: #f3f2ec;
+  --hero-accent: #c6f36b;
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d1418;
+    --surface: #1a1a19;
+    --surface-2: #242523;
+    --line: #34362f;
+    --text: #f0efec;
+    --text-2: #c3c2b7;
+    --text-3: #8f8e86;
+    --accent: #c6f36b;
+    --accent-ink: #0a151b;
+    --blue: #3987e5;
+    --red: #e66767;
+    --signal: #9085e9;
+    --band: rgba(240, 239, 236, 0.07);
+    --band-hover: rgba(198, 243, 107, 0.16);
+    --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d1418;
+  --surface: #1a1a19;
+  --surface-2: #242523;
+  --line: #34362f;
+  --text: #f0efec;
+  --text-2: #c3c2b7;
+  --text-3: #8f8e86;
+  --accent: #c6f36b;
+  --accent-ink: #0a151b;
+  --blue: #3987e5;
+  --red: #e66767;
+  --signal: #9085e9;
+  --band: rgba(240, 239, 236, 0.07);
+  --band-hover: rgba(198, 243, 107, 0.16);
+  --shadow: none;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.6 'Noto Sans KR', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+button { font: inherit; color: inherit; }
+
+/* hero */
+.hero { background: var(--hero-bg); color: var(--hero-text); padding: 56px 0 40px; position: relative; overflow: hidden; }
+.hero::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(900px 400px at 85% 10%, rgba(57,135,229,.22), transparent 60%),
+              radial-gradient(700px 300px at 100% 90%, rgba(230,103,103,.16), transparent 60%);
+  pointer-events: none;
+}
+.hero .wrap { position: relative; z-index: 1; }
+.eyebrow { color: var(--hero-accent); font-weight: 700; font-size: 14px; letter-spacing: .02em; }
+.hero h1 { font-size: clamp(30px, 5vw, 48px); line-height: 1.15; margin: 10px 0 12px; font-weight: 900; letter-spacing: -.02em; }
+.hero p { color: #b9c3c3; margin: 0; max-width: 640px; }
+.hero-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.theme-btn {
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); color: var(--hero-text);
+  border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: 13px; white-space: nowrap;
+}
+.theme-btn:hover { background: rgba(255,255,255,.14); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 32px; }
+.kpi { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 14px 16px; }
+.kpi .v { font-size: 28px; font-weight: 700; color: #fff; }
+.kpi .l { font-size: 13px; color: #9fb0b0; }
+
+/* pipeline */
+section { padding: 36px 0 8px; }
+h2 { font-size: 22px; margin: 0 0 4px; font-weight: 900; letter-spacing: -.01em; }
+.sub { color: var(--text-2); margin: 0 0 18px; font-size: 14px; }
+.steps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+@media (max-width: 1100px) { .steps { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 560px) { .steps { grid-template-columns: 1fr 1fr; } }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
+.step .n { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 600; font-size: 13px; }
+.step .t { font-weight: 700; margin: 2px 0 4px; }
+.step .d { color: var(--text-2); font-size: 13px; line-height: 1.5; }
+.chip { display: inline-block; font-size: 12px; border-radius: 999px; padding: 1px 9px; margin-top: 8px; border: 1px solid var(--line); color: var(--text-2); }
+.chip.done { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 700; }
+
+/* tabs */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 12px 0; border-bottom: 1px solid var(--line); }
+.tab { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: 14px; }
+.tab[aria-selected="true"] { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 700; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 18px 0; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow); }
+.tile .v { font-size: 22px; font-weight: 700; }
+.tile .l { font-size: 12px; color: var(--text-2); }
+.tile .v .b { color: var(--text); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: middle; margin-right: 5px; }
+.dot.blue { background: var(--blue); } .dot.red { background: var(--red); } .dot.signal { background: var(--signal); }
+
+/* chart */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; box-shadow: var(--shadow); }
+.chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--text-2); }
+.legend .sw { display: inline-block; width: 14px; height: 10px; border-radius: 3px; vertical-align: middle; margin-right: 6px; }
+.chart-wrap { position: relative; margin-top: 10px; }
+.chart-wrap svg { display: block; width: 100%; overflow: visible; }
+.axis text { fill: var(--text-3); font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+.grid line { stroke: var(--line); stroke-width: 1; }
+.band { fill: var(--band); cursor: pointer; transition: fill .12s; }
+.band:hover, .band.hl { fill: var(--band-hover); }
+.band-free { fill: url(#hatch); stroke: var(--text-3); stroke-dasharray: 3 3; stroke-width: 1; cursor: pointer; }
+.band-free:hover, .band-free.hl { stroke: var(--accent); stroke-width: 1.5; }
+.band-label { fill: var(--text-2); font-size: 10px; font-family: 'JetBrains Mono', monospace; pointer-events: none; }
+.chart-title { fill: var(--text-2); font-size: 12px; font-weight: 700; }
+.crosshair { stroke: var(--text-3); stroke-width: 1; pointer-events: none; }
+.tooltip {
+  position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; padding: 8px 10px; font-size: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.15);
+  min-width: 150px; opacity: 0; transition: opacity .1s; z-index: 3;
+}
+.tooltip .tt-time { font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+.tooltip .row { display: flex; justify-content: space-between; gap: 12px; color: var(--text-2); }
+.tooltip .row b { color: var(--text); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+
+/* scenes */
+.scene-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 28px 0 12px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; padding: 5px 12px; cursor: pointer; font-size: 13px; color: var(--text-2); }
+.seg button[aria-pressed="true"] { background: var(--text); color: var(--bg); font-weight: 700; }
+.scenes { display: grid; gap: 14px; }
+.scene { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); scroll-margin-top: 80px; transition: border-color .2s, box-shadow .2s; }
+.scene.flash { border-color: var(--accent); box-shadow: 0 0 0 3px var(--band-hover); }
+.scene-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rank { font-family: 'JetBrains Mono', monospace; font-weight: 600; background: var(--text); color: var(--bg); border-radius: 8px; padding: 2px 8px; font-size: 13px; }
+.scene-time { font-weight: 700; font-size: 17px; }
+.scene-score { margin-left: auto; color: var(--text-2); font-size: 13px; }
+.src { font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--text-2); }
+.src.visual { border-style: dashed; }
+.frames { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 12px 0 10px; }
+.frames figure { margin: 0; cursor: zoom-in; }
+.frames img { width: 100%; aspect-ratio: 1282 / 832; object-fit: cover; border-radius: 6px; display: block; background: var(--surface-2); border: 1px solid var(--line); }
+.frames figcaption { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+.scene-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 16px; }
+.events { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.events li { padding: 3px 0; border-bottom: 1px dashed var(--line); color: var(--text-2); }
+.events li:last-child { border-bottom: 0; }
+.events .t { font-family: 'JetBrains Mono', monospace; color: var(--text); margin-right: 8px; }
+.label-sm { font-size: 12px; color: var(--text-3); font-weight: 700; margin-bottom: 4px; }
+.vlm { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; font-size: 13px; color: var(--text-2); }
+.vlm h4 { margin: 8px 0 2px; font-size: 13px; color: var(--text); }
+.vlm ul { margin: 0; padding-left: 18px; }
+.conf { font-size: 11px; color: var(--text-3); }
+.more { display: block; margin: 14px auto 0; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 16px; cursor: pointer; font-size: 13px; }
+.compact { display: grid; grid-template-columns: auto auto 1fr auto; gap: 4px 14px; align-items: center; font-size: 13px; }
+.compact .row-line { display: contents; }
+
+/* table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--text-2); font-weight: 700; background: var(--surface-2); }
+td.num, th.num { text-align: right; font-family: 'JetBrains Mono', monospace; }
+tr:last-child td { border-bottom: 0; }
+tbody tr { cursor: pointer; }
+tbody tr:hover td { background: var(--band); }
+
+footer { color: var(--text-3); font-size: 12px; padding: 40px 0 48px; }
+
+/* lightbox */
+.lb { position: fixed; inset: 0; background: rgba(5,10,12,.88); display: none; align-items: center; justify-content: center; z-index: 50; padding: 24px; }
+.lb.open { display: flex; }
+.lb img { max-width: min(1280px, 100%); max-height: calc(100vh - 110px); border-radius: 8px; }
+.lb .cap { color: #e5e5e5; text-align: center; margin-top: 10px; font-size: 14px; }
+.lb-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,.1); border: 0; color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 20px; }
+.lb-btn:hover { background: rgba(255,255,255,.2); }
+.lb-prev { left: 16px; } .lb-next { right: 16px; }
+.lb-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,.1); border: 0; color: #fff; border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+
+@media (max-width: 760px) {
+  .wrap { padding: 0 16px; }
+  .frames { grid-template-columns: repeat(3, 1fr); }
+  .scene-body { grid-template-columns: 1fr; }
+  .scene-score { margin-left: 0; width: 100%; }
+  .hero { padding: 36px 0 28px; }
+}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-top">
+      <div class="eyebrow">팀 Loading… · LOLDOV</div>
+      <button class="theme-btn" id="themeBtn" type="button">테마 전환</button>
+    </div>
+    <h1>VLM 기반 VOD 분석<br>코치형 AI · 분석 리포트</h1>
+    <p>리그 오브 레전드 리플레이 영상에서 게임 시계·킬 스코어를 읽어 시간을 맞추고, 킬 이벤트와 교전 신호로 주요 장면을 골라낸 결과입니다.</p>
+    <div class="kpis" id="kpis"></div>
+  </div>
+</header>
+
+<main>
+  <section class="wrap">
+    <h2>처리 흐름</h2>
+    <p class="sub">중간발표의 6단계 흐름 중 현재 구현된 단계</p>
+    <div class="steps" id="steps"></div>
+  </section>
+
+  <section class="wrap" id="videoSection">
+    <h2>경기별 결과</h2>
+    <p class="sub">영상을 고르면 교전 신호·킬 흐름과 주요 장면을 볼 수 있습니다. 차트의 장면 구간을 누르면 해당 장면 카드로 이동합니다.</p>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="tiles" id="tiles"></div>
+
+    <div class="card">
+      <div class="chart-head">
+        <div style="font-weight:700">경기 타임라인 <span class="mono" style="color:var(--text-3);font-weight:400;font-size:13px">x축: 게임 시간</span></div>
+        <div class="legend">
+          <span><span class="sw" style="background:var(--signal)"></span>교전 신호</span>
+          <span><span class="sw" style="background:var(--band-hover)"></span>이벤트 장면</span>
+          <span><span class="sw" style="border:1px dashed var(--text-3);background:transparent"></span>이벤트 없는 장면</span>
+          <span><span class="dot blue"></span>블루 킬</span>
+          <span><span class="dot red"></span>레드 킬</span>
+        </div>
+      </div>
+      <div class="chart-wrap" id="chartWrap">
+        <svg id="chart" role="img" aria-label="교전 신호와 누적 킬 차트"></svg>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+    </div>
+
+    <div class="scene-head">
+      <div>
+        <h2 style="margin:0">주요 장면</h2>
+        <div class="sub" style="margin:0" id="sceneSub"></div>
+      </div>
+      <div class="seg" role="group" aria-label="장면 필터">
+        <button type="button" data-filter="all" aria-pressed="true">전체</button>
+        <button type="button" data-filter="event" aria-pressed="false">이벤트</button>
+        <button type="button" data-filter="free" aria-pressed="false">이벤트 없음</button>
+      </div>
+    </div>
+    <div class="scenes" id="scenes"></div>
+    <button class="more" id="moreBtn" type="button"></button>
+  </section>
+
+  <section class="wrap">
+    <h2>수집 영상 현황</h2>
+    <p class="sub">행을 누르면 해당 경기로 이동합니다.</p>
+    <div class="table-wrap"><table id="inventory"></table></div>
+  </section>
+</main>
+
+<footer class="wrap" id="footer"></footer>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="프레임 보기">
+  <button class="lb-close" id="lbClose" type="button">닫기 ✕</button>
+  <button class="lb-btn lb-prev" id="lbPrev" type="button" aria-label="이전">‹</button>
+  <div>
+    <img id="lbImg" alt="">
+    <div class="cap" id="lbCap"></div>
+  </div>
+  <button class="lb-btn lb-next" id="lbNext" type="button" aria-label="다음">›</button>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const mmss = sec => { sec = Math.max(0, Math.round(sec)); return `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`; };
+const TEAM = { blue: '블루', red: '레드' };
+const SRC = { video_score: 'HUD 킬 스코어', riot_timeline: 'Riot 타임라인', visual: '시각 신호' };
+
+const state = { video: 0, filter: 'all', showAll: false };
+
+/* theme */
+(function initTheme() {
+  let saved = null;
+  try { saved = localStorage.getItem('loldov-theme'); } catch (e) {}
+  if (saved) document.documentElement.dataset.theme = saved;
+  $('#themeBtn').addEventListener('click', () => {
+    const cur = document.documentElement.dataset.theme
+      || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('loldov-theme', next); } catch (e) {}
+    renderChart();
+  });
+})();
+
+/* overview */
+function finalScore(v) {
+  let b = 0, r = 0;
+  for (const k of v.kills) { if (k.team === 'blue') b = Math.max(b, k.score_after); else r = Math.max(r, k.score_after); }
+  return [b, r];
+}
+function renderOverview() {
+  const vs = DATA.videos;
+  const minutes = vs.reduce((a, v) => a + v.info.duration_sec, 0) / 60;
+  const kills = vs.reduce((a, v) => a + finalScore(v)[0] + finalScore(v)[1], 0);
+  const scenes = vs.reduce((a, v) => a + v.scenes.length, 0);
+  const free = vs.reduce((a, v) => a + v.scenes.filter(s => s.event_free).length, 0);
+  const clock = vs.reduce((a, v) => a + v.sync.clock_read_rate, 0) / vs.length;
+  $('#kpis').innerHTML = [
+    [vs.length + '경기', '분석한 VOD'],
+    [Math.round(minutes) + '분', '총 영상 길이'],
+    [kills, '검출한 킬'],
+    [scenes, `장면 후보 (이벤트 없음 ${free})`],
+    [(clock * 100).toFixed(1) + '%', '게임 시계 인식률'],
+  ].map(([v, l]) => `<div class="kpi"><div class="v mono">${v}</div><div class="l">${l}</div></div>`).join('');
+
+  const steps = [
+    ['01', '데이터 수집', 'VOD 인벤토리, Riot API 수집 스크립트', true],
+    ['02', '장면 후보 선정', 'HUD 시계로 시간 동기화, 킬·교전 신호 점수화', true],
+    ['03', '영상 분석', 'HUD OCR 구현 · YOLO는 예정 · VLM 프롬프트 구성', true],
+    ['04', '지식·도구 호출', 'Agent·패치 기반 RAG', false],
+    ['05', '코칭과 검증', 'LLM 대안 생성, 근거 대조', false],
+    ['06', '리포트·질의응답', '이 리포트 페이지 (질의응답은 예정)', true],
+  ];
+  $('#steps').innerHTML = steps.map(([n, t, d, done]) => `
+    <div class="step"><div class="n">${n}</div><div class="t">${t}</div><div class="d">${d}</div>
+    <span class="chip ${done ? 'done' : ''}">${done ? '구현됨' : '예정'}</span></div>`).join('');
+}
+
+/* tabs */
+function renderTabs() {
+  $('#tabs').innerHTML = DATA.videos.map((v, i) =>
+    `<button class="tab" role="tab" aria-selected="${i === state.video}" data-i="${i}">${esc(v.name)}</button>`).join('');
+  $('#tabs').querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => selectVideo(+b.dataset.i)));
+}
+function selectVideo(i, scroll) {
+  state.video = i; state.showAll = false;
+  renderTabs(); renderTiles(); renderChart(); renderScenes();
+  if (scroll) $('#videoSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderTiles() {
+  const v = DATA.videos[state.video];
+  const [b, r] = finalScore(v);
+  const seg = v.sync.segments[0];
+  const free = v.scenes.filter(s => s.event_free).length;
+  $('#tiles').innerHTML = [
+    [mmss(v.info.duration_sec), '영상 길이'],
+    [seg ? `${seg.offset > 0 ? '+' : ''}${seg.offset}s` : '–', '영상−게임 시간 offset'],
+    [seg ? `${seg.residual_max}s` : '–', `동기화 잔차 최댓값 · 구간 ${v.sync.segments.length}`],
+    [(v.sync.clock_read_rate * 100).toFixed(1) + '%', '시계 인식률'],
+    [`<span class="dot blue"></span>${b} : ${r}<span class="dot red" style="margin:0 0 0 5px"></span>`, '최종 킬 (블루 : 레드)'],
+    [`${v.scenes.length}`, `장면 후보 · 이벤트 없음 ${free}`],
+  ].map(([val, l]) => `<div class="tile"><div class="v mono">${val}</div><div class="l">${l}</div></div>`).join('');
+}
+
+/* chart */
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function renderChart() {
+  const v = DATA.videos[state.video];
+  const svg = $('#chart');
+  const W = $('#chartWrap').clientWidth;
+  const narrow = W < 560;
+  const M = { l: 36, r: narrow ? 56 : 72, t: 22 };
+  const HA = narrow ? 120 : 150, GAP = 34, HB = narrow ? 110 : 140, AX = 22;
+  const H = M.t + HA + GAP + HB + AX;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('height', H);
+
+  const tMax = Math.max(v.series[v.series.length - 1][0], ...v.kills.map(k => k.game_sec));
+  const x = t => M.l + (W - M.l - M.r) * (t / tMax);
+  const iMax = Math.max(0.5, ...v.series.map(p => p[1])) * 1.08;
+  const yA = val => M.t + HA - HA * (val / iMax);
+  const [fb, fr] = finalScore(v);
+  const kMax = Math.max(5, fb, fr);
+  const topB = M.t + HA + GAP;
+  const yB = val => topB + HB - HB * (val / kMax);
+
+  let s = `<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <line x1="0" y1="0" x2="0" y2="6" stroke="${css('--text-3')}" stroke-opacity=".35" stroke-width="2"/></pattern></defs>`;
+
+  // grid + x ticks (every 5 min, 2 min for short games)
+  const stepMin = tMax > 900 ? 5 : 2;
+  s += '<g class="grid">';
+  for (let m = 0; m * 60 <= tMax; m += stepMin) {
+    s += `<line x1="${x(m * 60)}" x2="${x(m * 60)}" y1="${M.t}" y2="${M.t + HA}"/>`;
+    s += `<line x1="${x(m * 60)}" x2="${x(m * 60)}" y1="${topB}" y2="${topB + HB}"/>`;
+  }
+  s += `<line x1="${M.l}" x2="${W - M.r}" y1="${M.t + HA}" y2="${M.t + HA}"/><line x1="${M.l}" x2="${W - M.r}" y1="${topB + HB}" y2="${topB + HB}"/>`;
+  const kStep = kMax > 20 ? 10 : 5;
+  for (let k = kStep; k <= kMax; k += kStep) s += `<line x1="${M.l}" x2="${W - M.r}" y1="${yB(k)}" y2="${yB(k)}" stroke-dasharray="2 4"/>`;
+  s += '</g><g class="axis">';
+  for (let m = 0; m * 60 <= tMax; m += stepMin) s += `<text x="${x(m * 60)}" y="${H - 4}" text-anchor="middle">${m}:00</text>`;
+  for (let k = 0; k <= kMax; k += kStep) s += `<text x="${M.l - 6}" y="${yB(k) + 4}" text-anchor="end">${k}</text>`;
+  s += '</g>';
+  s += `<text class="chart-title" x="${M.l}" y="${M.t - 8}">${narrow ? '교전 신호 · 장면 후보' : `교전 신호 강도와 장면 후보 (상위 ${v.top_k}개 + 이벤트 없는 장면)`}</text>`;
+  s += `<text class="chart-title" x="${M.l}" y="${topB - 8}">누적 킬</text>`;
+
+  // scene bands (top-k)
+  const top = v.scenes.filter(sc => sc.frames.length);
+  for (const sc of top) {
+    const x0 = x(Math.max(0, sc.start)), x1 = x(Math.min(tMax, sc.end));
+    s += `<rect class="${sc.event_free ? 'band-free' : 'band'}" data-rank="${sc.rank}" x="${x0}" y="${M.t}" width="${Math.max(2, x1 - x0)}" height="${HA}" rx="3"><title>#${sc.rank} ${sc.game_time}</title></rect>`;
+    if (!narrow || sc.rank <= 5) s += `<text class="band-label" x="${(x0 + x1) / 2}" y="${M.t + 11}" text-anchor="middle">#${sc.rank}</text>`;
+  }
+
+  // signal area + line
+  const pts = v.series.map(p => `${x(p[0]).toFixed(1)},${yA(p[1]).toFixed(1)}`);
+  const sig = css('--signal');
+  s += `<path d="M${x(v.series[0][0])},${yA(0)} L${pts.join(' L')} L${x(v.series[v.series.length - 1][0])},${yA(0)} Z" fill="${sig}" fill-opacity=".14" pointer-events="none"/>`;
+  s += `<path d="M${pts.join(' L')}" fill="none" stroke="${sig}" stroke-width="1.5" stroke-linejoin="round" pointer-events="none"/>`;
+
+  // cumulative kills (step-after)
+  const surface = css('--surface');
+  for (const team of ['blue', 'red']) {
+    const col = css('--' + team);
+    const ks = v.kills.filter(k => k.team === team);
+    let d = `M${x(0)},${yB(0)}`, last = 0;
+    for (const k of ks) { d += ` H${x(k.game_sec)} V${yB(k.score_after)}`; last = k.score_after; }
+    d += ` H${x(tMax)}`;
+    s += `<path d="${d}" fill="none" stroke="${col}" stroke-width="2" pointer-events="none"/>`;
+    for (const k of ks) s += `<circle cx="${x(k.game_sec)}" cy="${yB(k.score_after)}" r="${k.kills > 1 ? 5 : 3.5}" fill="${col}" stroke="${surface}" stroke-width="2" pointer-events="none"/>`;
+    s += `<circle cx="${x(tMax) + 10}" cy="${yB(last)}" r="4" fill="${col}"/>`;
+    s += `<text x="${x(tMax) + 18}" y="${yB(last) + 4}" fill="${css('--text')}" font-size="12" font-weight="700">${TEAM[team]} ${last}</text>`;
+  }
+  // nudge overlapping end labels
+  s += `<line class="crosshair" id="xh" x1="0" x2="0" y1="${M.t}" y2="${topB + HB}" visibility="hidden"/>`;
+  s += `<rect id="hit" x="${M.l}" y="${M.t}" width="${W - M.l - M.r}" height="${topB + HB - M.t}" fill="transparent"/>`;
+  svg.innerHTML = s;
+
+  // fix end-label collision
+  const labels = [...svg.querySelectorAll('text')].filter(t => /^(블루|레드) /.test(t.textContent));
+  if (labels.length === 2) {
+    const [a, b] = labels.map(l => +l.getAttribute('y'));
+    if (Math.abs(a - b) < 14) { const mid = (a + b) / 2; const up = a <= b ? 0 : 1;
+      labels[up].setAttribute('y', mid - 7); labels[1 - up].setAttribute('y', mid + 9); }
+  }
+
+  // bands -> scene card
+  svg.querySelectorAll('[data-rank]').forEach(r => r.addEventListener('click', () => goScene(+r.dataset.rank)));
+
+  // hover: crosshair + tooltip (bands sit under the hit rect, so resolve scene by time)
+  const hit = $('#hit'), xh = $('#xh'), tip = $('#tooltip');
+  const tAt = ev => { const rect = svg.getBoundingClientRect(); const px = (ev.clientX - rect.left) * (W / rect.width);
+    return Math.min(tMax, Math.max(0, (px - M.l) / (W - M.l - M.r) * tMax)); };
+  hit.addEventListener('mousemove', ev => {
+    const t = tAt(ev);
+    const p = v.series.reduce((a, b) => Math.abs(b[0] - t) < Math.abs(a[0] - t) ? b : a);
+    let sb = 0, sr = 0;
+    for (const k of v.kills) if (k.game_sec <= t) { if (k.team === 'blue') sb = k.score_after; else sr = k.score_after; }
+    const sc = top.find(sc => t >= sc.start && t <= sc.end);
+    svg.querySelectorAll('.hl').forEach(e => e.classList.remove('hl'));
+    if (sc) svg.querySelector(`[data-rank="${sc.rank}"]`)?.classList.add('hl');
+    hit.style.cursor = sc ? 'pointer' : 'crosshair';
+    xh.setAttribute('x1', x(t)); xh.setAttribute('x2', x(t)); xh.setAttribute('visibility', 'visible');
+    tip.innerHTML = `<div class="tt-time">${mmss(t)}</div>
+      <div class="row"><span><span class="dot signal"></span>교전 신호</span><b>${p[1].toFixed(2)}</b></div>
+      <div class="row"><span><span class="dot blue"></span>블루 킬</span><b>${sb}</b></div>
+      <div class="row"><span><span class="dot red"></span>레드 킬</span><b>${sr}</b></div>
+      ${sc ? `<div class="row" style="margin-top:4px"><span>장면 #${sc.rank}${sc.event_free ? ' (이벤트 없음)' : ''}</span><b>${sc.game_time}</b></div>` : ''}`;
+    const rect = svg.getBoundingClientRect();
+    const px = ev.clientX - rect.left, tw = tip.offsetWidth;
+    tip.style.left = (px + 14 + tw > rect.width ? px - tw - 14 : px + 14) + 'px';
+    tip.style.top = (ev.clientY - rect.top - 20) + 'px';
+    tip.style.opacity = 1;
+    hit.onclick = sc ? () => goScene(sc.rank) : null;
+  });
+  hit.addEventListener('mouseleave', () => {
+    tip.style.opacity = 0; xh.setAttribute('visibility', 'hidden');
+    svg.querySelectorAll('.hl').forEach(e => e.classList.remove('hl'));
+  });
+}
+
+function goScene(rank) {
+  const v = DATA.videos[state.video];
+  const sc = v.scenes.find(s => s.rank === rank);
+  if (sc && !passes(sc)) setFilter('all');
+  if (sc && !sc.frames.length && !state.showAll) { state.showAll = true; renderScenes(); }
+  const el = document.getElementById('scene-' + rank);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 1600);
+}
+
+/* scenes */
+function passes(sc) { return state.filter === 'all' || (state.filter === 'free') === sc.event_free; }
+function setFilter(f) {
+  state.filter = f;
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.filter === f));
+  renderScenes();
+}
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => setFilter(b.dataset.filter)));
+
+function eventLine(e) {
+  const t = e.game_sec != null ? mmss(e.game_sec) : '';
+  if (e.source === 'video_score')
+    return `<li><span class="t">${t}</span><span class="dot ${e.team}"></span>${TEAM[e.team]} 킬 +${e.kills} <span style="color:var(--text-3)">→ ${e.score_after}</span></li>`;
+  if (e.source === 'visual')
+    return `<li><span class="t">${mmss(e.video_sec - (DATA.videos[state.video].sync.segments[0]?.offset || 0))}</span>킬 없는 교전 신호 · 강도 ${e.intensity}</li>`;
+  return `<li><span class="t">${t}</span>${esc(e.type)} ${esc(e.monster_type || e.building_type || '')}</li>`;
+}
+function vlmBlock(sc) {
+  if (!sc.vlm) return '<div class="vlm">VLM 분석 결과 없음</div>';
+  if (sc.vlm.error) return `<div class="vlm">VLM 호출 실패: ${esc(sc.vlm.error)}</div>`;
+  const a = sc.vlm.analysis;
+  if (!a) return `<div class="vlm">${sc.vlm.dry_run ? 'VLM 미실행 (dry-run). <span class="mono">python main.py … --vlm</span>으로 Qwen을 호출하면 장면 분석·실수·대안 행동이 여기에 표시됩니다.' : '응답을 JSON으로 해석하지 못했습니다.'}</div>`;
+  const list = (items, f) => items && items.length ? `<ul>${items.map(f).join('')}</ul>` : '<div>–</div>';
+  return `<div class="vlm">
+    <div><b style="color:var(--text)">${esc(a.player_champion)}</b> · ${esc(a.location)}</div>
+    <div>${esc(a.situation)}</div>
+    ${a.key_moment ? `<h4>핵심 순간 <span class="mono conf">${esc(a.key_moment.frame)}</span></h4><div>${esc(a.key_moment.description)}</div>` : ''}
+    <h4>실수·아쉬운 판단</h4>${list(a.mistakes, m => `<li>${esc(m.description)} <span class="conf">${esc((m.evidence || []).join(', '))} · ${esc(m.confidence)}</span></li>`)}
+    <h4>대안 행동</h4>${list(a.alternatives, m => `<li><b style="color:var(--text)">${esc(m.action)}</b> — ${esc(m.reason)}</li>`)}
+  </div>`;
+}
+function renderScenes() {
+  const v = DATA.videos[state.video];
+  const list = v.scenes.filter(passes);
+  const shown = state.showAll ? list : list.filter(s => s.frames.length);
+  $('#sceneSub').textContent = `점수순 · 프레임은 상위 ${v.top_k}개와 이벤트 없는 장면만 추출`;
+  const cards = shown.map(sc => {
+    const srcs = sc.sources.map(x => `<span class="src ${x === 'visual' ? 'visual' : ''}">${SRC[x] || esc(x)}</span>`).join('');
+    const frames = sc.frames.length ? `<div class="frames">${sc.frames.map((f, i) =>
+      `<figure data-rank="${sc.rank}" data-i="${i}"><img loading="lazy" src="${esc(f.url)}" alt="장면 ${sc.rank} 게임 ${esc(f.game_time)} 프레임"><figcaption>${esc(f.game_time)}</figcaption></figure>`).join('')}</div>` : '';
+    return `<article class="scene" id="scene-${sc.rank}">
+      <div class="scene-top"><span class="rank">#${sc.rank}</span><span class="scene-time mono">${esc(sc.game_time).replace('~', ' – ')}</span>${srcs}
+      <span class="scene-score">점수 <b class="mono" style="color:var(--text)">${sc.score}</b> · 영상 <span class="mono">${mmss(sc.video_start)}</span></span></div>
+      ${frames}
+      <div class="scene-body" ${frames ? '' : 'style="margin-top:10px"'}>
+        <div><div class="label-sm">검출 이벤트</div><ul class="events">${sc.events.map(eventLine).join('')}</ul></div>
+        <div><div class="label-sm">VLM 장면 분석</div>${frames ? vlmBlock(sc) : '<div class="vlm">상위 장면이 아니어서 프레임·VLM 분석을 하지 않았습니다.</div>'}</div>
+      </div></article>`;
+  });
+  $('#scenes').innerHTML = cards.join('') || '<div class="card">해당하는 장면이 없습니다.</div>';
+  const hidden = list.length - shown.length;
+  const btn = $('#moreBtn');
+  btn.style.display = hidden > 0 || (state.showAll && list.some(s => !s.frames.length)) ? 'block' : 'none';
+  btn.textContent = state.showAll ? '프레임 있는 장면만 보기' : `나머지 ${hidden}개 장면 보기`;
+  btn.onclick = () => { state.showAll = !state.showAll; renderScenes(); };
+  $('#scenes').querySelectorAll('figure').forEach(f => f.addEventListener('click', () => openLb(+f.dataset.rank, +f.dataset.i)));
+}
+
+/* lightbox */
+const lb = { rank: 0, i: 0 };
+function lbFrames() { return DATA.videos[state.video].scenes.find(s => s.rank === lb.rank).frames; }
+function showLb() {
+  const fs = lbFrames(), f = fs[lb.i];
+  $('#lbImg').src = f.url;
+  $('#lbImg').alt = `장면 ${lb.rank} 프레임 ${f.id}`;
+  $('#lbCap').innerHTML = `${esc(DATA.videos[state.video].name)} · 장면 #${lb.rank} · <span class="mono">${esc(f.id)}</span> · 게임 <span class="mono">${esc(f.game_time)}</span> (${lb.i + 1}/${fs.length})`;
+}
+function openLb(rank, i) { lb.rank = rank; lb.i = i; showLb(); $('#lb').classList.add('open'); }
+function closeLb() { $('#lb').classList.remove('open'); }
+function stepLb(d) { const n = lbFrames().length; lb.i = (lb.i + d + n) % n; showLb(); }
+$('#lbClose').onclick = closeLb;
+$('#lbPrev').onclick = e => { e.stopPropagation(); stepLb(-1); };
+$('#lbNext').onclick = e => { e.stopPropagation(); stepLb(1); };
+$('#lb').addEventListener('click', e => { if (e.target.id === 'lb') closeLb(); });
+document.addEventListener('keydown', e => {
+  if (!$('#lb').classList.contains('open')) return;
+  if (e.key === 'Escape') closeLb(); else if (e.key === 'ArrowLeft') stepLb(-1); else if (e.key === 'ArrowRight') stepLb(1);
+});
+
+/* inventory */
+function renderInventory() {
+  const head = `<thead><tr><th>영상</th><th>해상도</th><th class="num">길이</th><th class="num">용량</th><th class="num">offset</th><th class="num">시계 인식</th><th class="num">킬 (B:R)</th><th class="num">장면</th><th class="num">이벤트 없는 장면</th></tr></thead>`;
+  const rows = DATA.videos.map((v, i) => {
+    const [b, r] = finalScore(v);
+    const seg = v.sync.segments[0];
+    return `<tr data-i="${i}"><td><b>${esc(v.name)}</b></td><td class="mono">${v.info.width}×${v.info.height}</td>
+      <td class="num">${mmss(v.info.duration_sec)}</td><td class="num">${v.info.size_mb} MB</td>
+      <td class="num">${seg ? seg.offset + 's' : '–'}</td><td class="num">${(v.sync.clock_read_rate * 100).toFixed(1)}%</td>
+      <td class="num">${b} : ${r}</td><td class="num">${v.scenes.length}</td><td class="num">${v.scenes.filter(s => s.event_free).length}</td></tr>`;
+  }).join('');
+  $('#inventory').innerHTML = head + `<tbody>${rows}</tbody>`;
+  $('#inventory').querySelectorAll('tbody tr').forEach(tr => tr.addEventListener('click', () => selectVideo(+tr.dataset.i, true)));
+}
+
+renderOverview();
+renderInventory();
+selectVideo(0);
+$('#footer').textContent = `생성: ${new Date(Math.max(...DATA.videos.map(v => Date.parse(v.run_at)))).toLocaleString('ko-KR')} · 장면 점수·교전 신호는 휴리스틱 실험값이며 정답 라벨 기반 평가 전입니다.`;
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(renderChart, 120); });
+</script>
+</body>
+</html>

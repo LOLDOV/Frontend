@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LOLDOV 코치</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f3f2ec; --surface: #fcfcfb; --surface-2: #ebeae3; --line: #d9d8d0;
+  --text: #13262c; --text-2: #4d5a5e; --text-3: #7a8588;
+  --accent: #0e7c66; --accent-ink: #ffffff; --accent-soft: rgba(14,124,102,.12);
+  --blue: #2a78d6; --red: #e34948; --signal: #6250d6;
+  --win: #0e7c66; --loss: #c2410c; --trade: #7a8588;
+  --band: rgba(19,38,44,.07); --band-hover: rgba(14,124,102,.16);
+  --hero-bg: #0a151b; --hero-text: #f3f2ec; --hero-accent: #c6f36b;
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d1418; --surface: #1a1a19; --surface-2: #242523; --line: #34362f;
+    --text: #f0efec; --text-2: #c3c2b7; --text-3: #8f8e86;
+    --accent: #c6f36b; --accent-ink: #0a151b; --accent-soft: rgba(198,243,107,.12);
+    --blue: #3987e5; --red: #e66767; --signal: #9085e9;
+    --win: #c6f36b; --loss: #fb923c; --trade: #8f8e86;
+    --band: rgba(240,239,236,.07); --band-hover: rgba(198,243,107,.16); --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d1418; --surface: #1a1a19; --surface-2: #242523; --line: #34362f;
+  --text: #f0efec; --text-2: #c3c2b7; --text-3: #8f8e86;
+  --accent: #c6f36b; --accent-ink: #0a151b; --accent-soft: rgba(198,243,107,.12);
+  --blue: #3987e5; --red: #e66767; --signal: #9085e9;
+  --win: #c6f36b; --loss: #fb923c; --trade: #8f8e86;
+  --band: rgba(240,239,236,.07); --band-hover: rgba(198,243,107,.16); --shadow: none;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 'Noto Sans KR', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+.mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+button { font: inherit; color: inherit; }
+a { color: inherit; }
+[hidden] { display: none !important; }
+
+/* top bar */
+.topbar { background: var(--hero-bg); color: var(--hero-text); }
+.topbar .wrap { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+.brand { font-weight: 900; letter-spacing: -.01em; text-decoration: none; display: flex; gap: 8px; align-items: center; }
+.brand b { color: var(--hero-accent); }
+.pill-btn { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); color: var(--hero-text); border-radius: 999px; padding: 5px 13px; cursor: pointer; font-size: 13px; }
+.pill-btn:hover { background: rgba(255,255,255,.15); }
+
+/* hero + upload */
+.hero { background: var(--hero-bg); color: var(--hero-text); padding: 36px 0 56px; position: relative; overflow: hidden; }
+.hero::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(900px 380px at 90% 0%, rgba(57,135,229,.22), transparent 60%), radial-gradient(700px 300px at 100% 100%, rgba(230,103,103,.16), transparent 60%); }
+.hero .wrap { position: relative; z-index: 1; }
+.eyebrow { color: var(--hero-accent); font-weight: 700; font-size: 14px; }
+.hero h1 { font-size: clamp(28px, 4.6vw, 44px); line-height: 1.18; margin: 8px 0 10px; font-weight: 900; letter-spacing: -.02em; }
+.hero p.lead { color: #b9c3c3; margin: 0 0 26px; max-width: 620px; }
+.drop {
+  display: block; border: 2px dashed rgba(198,243,107,.55); border-radius: 18px; padding: 40px 24px; text-align: center; cursor: pointer;
+  background: rgba(255,255,255,.04); transition: background .15s, border-color .15s; color: var(--hero-text);
+}
+.drop:hover, .drop.over { background: rgba(198,243,107,.08); border-color: var(--hero-accent); }
+.drop:focus-within { outline: 3px solid rgba(198,243,107,.5); outline-offset: 3px; }
+.drop .icon { width: 52px; height: 52px; margin: 0 auto 10px; border-radius: 14px; background: var(--hero-accent); color: #0a151b; display: grid; place-items: center; }
+.drop .big { font-size: 19px; font-weight: 700; }
+.drop .small { color: #9fb0b0; font-size: 13px; margin-top: 6px; }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.drop .choose { display: inline-block; margin-top: 14px; background: var(--hero-accent); color: #0a151b; font-weight: 700; border-radius: 999px; padding: 8px 20px; }
+.notice { margin-top: 14px; font-size: 13px; color: #b9c3c3; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 10px; padding: 10px 14px; }
+.notice b { color: var(--hero-accent); }
+
+/* progress card */
+.progress-card { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: 18px; padding: 22px; }
+.progress-card .file { font-weight: 700; font-size: 17px; word-break: break-all; }
+.bar { height: 10px; background: rgba(255,255,255,.1); border-radius: 999px; overflow: hidden; margin: 14px 0 8px; }
+.bar > div { height: 100%; width: 0; background: var(--hero-accent); border-radius: 999px; transition: width .4s; }
+.progress-meta { display: flex; justify-content: space-between; font-size: 13px; color: #b9c3c3; }
+.stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 16px; padding: 0; list-style: none; }
+.stages li { font-size: 13px; color: #7f8f8f; display: flex; gap: 8px; align-items: center; }
+.stages li .mk { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #4a5a5a; display: grid; place-items: center; font-size: 11px; flex: none; }
+.stages li.done { color: #d7e0dc; } .stages li.done .mk { background: var(--hero-accent); border-color: var(--hero-accent); color: #0a151b; }
+.stages li.now { color: #fff; font-weight: 700; } .stages li.now .mk { border-color: var(--hero-accent); box-shadow: 0 0 0 3px rgba(198,243,107,.25); }
+.err { background: rgba(230,103,103,.15); border: 1px solid rgba(230,103,103,.4); color: #ffd7d7; border-radius: 10px; padding: 10px 14px; margin-top: 14px; font-size: 14px; }
+.ghost-btn { margin-top: 14px; background: transparent; border: 1px solid rgba(255,255,255,.25); color: var(--hero-text); border-radius: 999px; padding: 6px 16px; cursor: pointer; }
+
+/* sections */
+section { padding: 32px 0 6px; }
+h2 { font-size: 21px; margin: 0 0 4px; font-weight: 900; letter-spacing: -.01em; }
+.sub { color: var(--text-2); margin: 0 0 16px; font-size: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; box-shadow: var(--shadow); }
+.history { display: grid; gap: 8px; }
+.hist { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; cursor: pointer; text-decoration: none; }
+.hist:hover { border-color: var(--accent); }
+.hist .name { font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist .when { color: var(--text-3); font-size: 12px; }
+.status { font-size: 12px; border-radius: 999px; padding: 1px 9px; border: 1px solid var(--line); color: var(--text-2); white-space: nowrap; }
+.status.done { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 700; }
+.status.error { color: var(--loss); border-color: var(--loss); }
+.status.running, .status.queued { color: var(--accent); border-color: var(--accent); }
+.empty { color: var(--text-3); font-size: 14px; padding: 8px 2px; }
+
+/* report */
+.report-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 24px; }
+.back { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 14px; cursor: pointer; font-size: 13px; text-decoration: none; }
+.report-title { font-size: 22px; font-weight: 900; margin: 0; flex: 1; min-width: 0; word-break: break-all; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 16px 0; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow); }
+.tile .v { font-size: 22px; font-weight: 700; }
+.tile .l { font-size: 12px; color: var(--text-2); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: middle; margin-right: 5px; }
+.dot.blue { background: var(--blue); } .dot.red { background: var(--red); } .dot.signal { background: var(--signal); }
+
+.coach { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; }
+.coach .overall { font-size: 15px; color: var(--text); margin: 6px 0 0; }
+.src-note { font-size: 12px; color: var(--text-3); }
+.imp { border-top: 1px solid var(--line); padding: 12px 0 2px; }
+.imp:first-of-type { border-top: 0; }
+.imp .t { font-weight: 700; display: flex; gap: 8px; align-items: baseline; }
+.imp .n { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 13px; }
+.imp .d { color: var(--text-2); font-size: 14px; margin: 2px 0 6px; }
+.scene-chip { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; margin: 0 4px 4px 0; cursor: pointer; background: var(--surface-2); }
+.scene-chip:hover { border-color: var(--accent); color: var(--accent); }
+ul.plain { margin: 6px 0 0; padding-left: 18px; color: var(--text-2); font-size: 14px; }
+ul.plain li { margin: 3px 0; }
+.label-sm { font-size: 12px; color: var(--text-3); font-weight: 700; margin: 14px 0 2px; letter-spacing: .02em; }
+.label-sm:first-child { margin-top: 0; }
+
+/* chart */
+.chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--text-2); }
+.legend .sw { display: inline-block; width: 14px; height: 10px; border-radius: 3px; vertical-align: middle; margin-right: 6px; }
+.chart-wrap { position: relative; margin-top: 10px; }
+.chart-wrap svg { display: block; width: 100%; overflow: visible; }
+.axis text { fill: var(--text-3); font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+.grid line { stroke: var(--line); stroke-width: 1; }
+.band { fill: var(--band); }
+.band.hl { fill: var(--band-hover); }
+.band-free { fill: url(#hatch); stroke: var(--text-3); stroke-dasharray: 3 3; stroke-width: 1; }
+.band-free.hl { stroke: var(--accent); stroke-width: 1.5; }
+.band-label { fill: var(--text-2); font-size: 10px; font-family: 'JetBrains Mono', monospace; pointer-events: none; }
+.chart-title { fill: var(--text-2); font-size: 12px; font-weight: 700; }
+.crosshair { stroke: var(--text-3); stroke-width: 1; pointer-events: none; }
+.tooltip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.15); min-width: 150px; opacity: 0; transition: opacity .1s; z-index: 3; }
+.tooltip .tt-time { font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+.tooltip .row { display: flex; justify-content: space-between; gap: 12px; color: var(--text-2); }
+.tooltip .row b { color: var(--text); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+
+/* scenes */
+.scene-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 26px 0 12px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; padding: 5px 12px; cursor: pointer; font-size: 13px; color: var(--text-2); }
+.seg button[aria-pressed="true"] { background: var(--text); color: var(--bg); font-weight: 700; }
+.scenes { display: grid; gap: 14px; }
+.scene { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--trade); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); scroll-margin-top: 16px; transition: box-shadow .2s; }
+.scene.v-loss { border-left-color: var(--loss); } .scene.v-win { border-left-color: var(--win); }
+.scene.flash { box-shadow: 0 0 0 3px var(--band-hover); }
+.scene-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rank { font-family: 'JetBrains Mono', monospace; font-weight: 600; background: var(--text); color: var(--bg); border-radius: 8px; padding: 2px 8px; font-size: 13px; }
+.scene-time { font-weight: 700; font-size: 16px; }
+.verdict { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 1px 9px; border: 1px solid currentColor; }
+.verdict.loss { color: var(--loss); } .verdict.win { color: var(--win); } .verdict.trade, .verdict.skirmish { color: var(--text-2); }
+.scene-title { font-weight: 700; margin-left: auto; font-size: 14px; }
+.frames { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 12px 0 10px; }
+.frames figure { margin: 0; cursor: zoom-in; }
+.frames img { width: 100%; aspect-ratio: 1282 / 832; object-fit: cover; border-radius: 6px; display: block; background: var(--surface-2); border: 1px solid var(--line); }
+.frames figcaption { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+.scene-body { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; }
+.scene-body p { margin: 0; color: var(--text-2); font-size: 14px; }
+.events { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.events li { padding: 3px 0; border-bottom: 1px dashed var(--line); color: var(--text-2); }
+.events li:last-child { border-bottom: 0; }
+.events .t { font-family: 'JetBrains Mono', monospace; color: var(--text); margin-right: 8px; }
+.vlm-tag { font-size: 11px; font-weight: 700; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0 7px; margin-left: 6px; }
+.conf { font-size: 11px; color: var(--text-3); }
+
+/* Q&A */
+.qa-log { display: grid; gap: 10px; margin-bottom: 12px; max-height: 420px; overflow-y: auto; }
+.msg { border-radius: 12px; padding: 10px 12px; font-size: 14px; white-space: pre-wrap; max-width: 88%; }
+.msg.user { background: var(--text); color: var(--bg); justify-self: end; }
+.msg.assistant { background: var(--surface-2); color: var(--text); }
+.qa-form { display: flex; gap: 8px; }
+.qa-form input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 999px; padding: 9px 16px; font: inherit; }
+.qa-form button, .primary { border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 700; border-radius: 999px; padding: 9px 18px; cursor: pointer; }
+.qa-form button:disabled { opacity: .5; cursor: default; }
+.suggest { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.suggest button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 11px; font-size: 13px; cursor: pointer; color: var(--text-2); }
+.suggest button:hover { border-color: var(--accent); color: var(--text); }
+
+footer { color: var(--text-3); font-size: 12px; padding: 36px 0 48px; }
+
+/* lightbox */
+.lb { position: fixed; inset: 0; background: rgba(5,10,12,.9); display: none; align-items: center; justify-content: center; z-index: 50; padding: 24px; }
+.lb.open { display: flex; }
+.lb img { max-width: min(1280px, 100%); max-height: calc(100vh - 110px); border-radius: 8px; }
+.lb .cap { color: #e5e5e5; text-align: center; margin-top: 10px; font-size: 14px; }
+.lb-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,.1); border: 0; color: #fff; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 20px; }
+.lb-prev { left: 16px; } .lb-next { right: 16px; }
+.lb-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,.1); border: 0; color: #fff; border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+
+@media (max-width: 800px) {
+  .wrap { padding: 0 16px; }
+  .coach, .scene-body { grid-template-columns: 1fr; }
+  .frames { grid-template-columns: repeat(3, 1fr); }
+  .scene-title { margin-left: 0; width: 100%; }
+  .drop { padding: 28px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="wrap">
+  <a class="brand" href="#/"><b>LOLDOV 코치</b></a>
+  <button class="pill-btn" id="themeBtn" type="button">테마 전환</button>
+</div></div>
+
+<!-- 홈: 업로드 -->
+<div id="homeView">
+  <header class="hero"><div class="wrap">
+    <div class="eyebrow">VLM 기반 VOD 분석 코치형 AI</div>
+    <h1>리플레이 영상을 올리면<br>주요 장면을 찾아 코칭해 드립니다</h1>
+    <p class="lead">롤 리플레이를 녹화한 영상을 올려 주세요. 게임 시계·킬 스코어를 읽어 교전 장면을 골라내고, 장면마다 무엇을 확인하고 다르게 할 수 있었는지 알려드립니다.</p>
+
+    <div id="uploadBox">
+      <label class="drop" id="drop">
+        <input type="file" id="fileInput" accept="video/mp4,video/webm,video/x-matroska,video/quicktime,.mp4,.webm,.mkv,.mov">
+        <div class="icon" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m6 10 6-6 6 6"/><path d="M4 20h16"/></svg>
+        </div>
+        <div class="big">리플레이 영상을 여기에 끌어다 놓으세요</div>
+        <div class="small" id="dropHint">MP4 · WEBM · MKV · MOV · 롤 클라이언트 리플레이를 녹화한 화면 (게임 시계가 보여야 합니다)</div>
+        <span class="choose">영상 파일 선택</span>
+      </label>
+      <div class="notice" id="vlmNotice"></div>
+    </div>
+
+    <div class="progress-card" id="progressBox" hidden>
+      <div class="file" id="progFile"></div>
+      <div class="bar"><div id="progBar"></div></div>
+      <div class="progress-meta"><span id="progStage"></span><span class="mono" id="progPct"></span></div>
+      <ul class="stages" id="progStages"></ul>
+      <div class="err" id="progErr" hidden></div>
+      <button class="ghost-btn" id="progReset" type="button" hidden>다른 영상 올리기</button>
+    </div>
+  </div></header>
+
+  <section class="wrap">
+    <h2>분석 기록</h2>
+    <p class="sub">이전에 올린 영상의 분석 결과입니다. 분석 중인 영상은 다른 페이지로 가도 계속 진행됩니다.</p>
+    <div class="history" id="jobList"></div>
+  </section>
+  <section class="wrap">
+    <h2>예시 경기</h2>
+    <p class="sub">팀이 수집한 리플레이로 미리 만든 분석입니다.</p>
+    <div class="history" id="sampleList"></div>
+  </section>
+</div>
+
+<!-- 리포트 -->
+<div id="reportView" hidden>
+  <div class="wrap">
+    <div class="report-head">
+      <a class="back" href="#/">← 업로드로</a>
+      <h1 class="report-title" id="repTitle"></h1>
+    </div>
+    <div class="tiles" id="repTiles"></div>
+
+    <div class="coach">
+      <div class="card">
+        <div class="label-sm">경기 총평</div>
+        <p class="overall" id="repOverall"></p>
+        <div class="label-sm">개선할 점</div>
+        <div id="repImps"></div>
+      </div>
+      <div class="card">
+        <div class="label-sm">잘한 점</div>
+        <ul class="plain" id="repStrengths"></ul>
+        <div class="label-sm">다음 경기 전에 연습할 것</div>
+        <ul class="plain" id="repPractice"></ul>
+        <div class="label-sm">구간별 킬 (아군 : 상대)</div>
+        <ul class="plain" id="repPhases"></ul>
+        <p class="src-note" id="repSource"></p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="chart-head">
+        <div style="font-weight:700">경기 타임라인 <span class="mono" style="color:var(--text-3);font-weight:400;font-size:13px">x축: 게임 시간</span></div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="chart-wrap" id="chartWrap">
+        <svg id="chart" role="img" aria-label="교전 신호와 누적 킬 차트"></svg>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+    </div>
+
+    <div class="scene-head">
+      <div><h2 style="margin:0">장면별 코칭</h2><div class="sub" style="margin:0">점수순 · 차트의 장면 구간이나 #번호를 누르면 이동합니다</div></div>
+      <div class="seg" role="group" aria-label="장면 필터">
+        <button type="button" data-filter="all" aria-pressed="true">전체</button>
+        <button type="button" data-filter="loss" aria-pressed="false">교전 패배</button>
+        <button type="button" data-filter="win" aria-pressed="false">교전 승리</button>
+        <button type="button" data-filter="skirmish" aria-pressed="false">킬 없는 교전</button>
+      </div>
+    </div>
+    <div class="scenes" id="scenes"></div>
+
+    <section style="padding-top:28px">
+      <div class="card">
+        <h2>코치에게 질문하기</h2>
+        <p class="sub" id="qaSub">이 경기 리포트를 근거로 답합니다.</p>
+        <div class="suggest" id="qaSuggest"></div>
+        <div class="qa-log" id="qaLog"></div>
+        <form class="qa-form" id="qaForm">
+          <input id="qaInput" placeholder="예) 중반에 왜 계속 졌을까?" autocomplete="off">
+          <button type="submit" id="qaBtn">질문</button>
+        </form>
+      </div>
+    </section>
+  </div>
+</div>
+
+<footer class="wrap">장면 선정과 규칙 기반 코칭은 HUD에서 읽은 킬 시각·팀 정보만 사용합니다. 원인 판단은 프레임을 보고 직접 확인하세요.</footer>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="프레임 보기">
+  <button class="lb-close" id="lbClose" type="button">닫기 ✕</button>
+  <button class="lb-btn lb-prev" id="lbPrev" type="button" aria-label="이전">‹</button>
+  <div><img id="lbImg" alt=""><div class="cap" id="lbCap"></div></div>
+  <button class="lb-btn lb-next" id="lbNext" type="button" aria-label="다음">›</button>
+</div>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const mmss = sec => { sec = Math.max(0, Math.round(sec)); return `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`; };
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const STAGES = [['uploaded', '업로드'], ['scan', '영상 스캔'], ['player', '플레이어 팀 판별'], ['scenes', '장면 선정'], ['frames', '프레임 추출'], ['vlm', 'VLM 분석'], ['coach', '코칭 작성']];
+const VERDICT = { loss: '교전 패배', win: '교전 승리', trade: '킬 교환', skirmish: '킬 없는 교전' };
+let CONFIG = { vlm_available: false };
+let pollTimer = null;
+const state = { report: null, jobId: null, filter: 'all', qa: [] };
+
+/* theme */
+(function () {
+  let saved = null; try { saved = localStorage.getItem('loldov-theme'); } catch (e) {}
+  if (saved) document.documentElement.dataset.theme = saved;
+  $('#themeBtn').onclick = () => {
+    const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('loldov-theme', next); } catch (e) {}
+    if (state.report) renderChart();
+  };
+})();
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.detail || `요청 실패 (${res.status})`);
+  return body;
+}
+
+/* ---------- home ---------- */
+function setupUpload() {
+  const drop = $('#drop'), input = $('#fileInput');
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) startUpload(f); });
+  input.addEventListener('change', () => { if (input.files[0]) startUpload(input.files[0]); input.value = ''; });
+  $('#progReset').onclick = resetUpload;
+}
+function resetUpload() {
+  clearInterval(pollTimer);
+  $('#uploadBox').hidden = false; $('#progressBox').hidden = true;
+}
+function showProgress(file, stage, frac, label) {
+  $('#uploadBox').hidden = true; $('#progressBox').hidden = false;
+  $('#progFile').textContent = file;
+  $('#progBar').style.width = (frac * 100).toFixed(1) + '%';
+  $('#progPct').textContent = (frac * 100).toFixed(0) + '%';
+  $('#progStage').textContent = label;
+  const idx = STAGES.findIndex(s => s[0] === stage);
+  $('#progStages').innerHTML = STAGES.filter(s => s[0] !== 'vlm' || CONFIG.vlm_available).map(([k, l]) => {
+    const i = STAGES.findIndex(s => s[0] === k);
+    const cls = stage === 'done' || i < idx ? 'done' : i === idx ? 'now' : '';
+    return `<li class="${cls}"><span class="mk">${cls === 'done' ? '✓' : ''}</span>${l}</li>`;
+  }).join('');
+  $('#progErr').hidden = true; $('#progReset').hidden = true;
+}
+function startUpload(file) {
+  const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+  if (!['.mp4', '.webm', '.mkv', '.mov'].includes(ext)) { alert('MP4, WEBM, MKV, MOV 영상만 올릴 수 있습니다.'); return; }
+  const mb = (file.size / 1024 / 1024).toFixed(0);
+  showProgress(file.name, 'uploaded', 0, `업로드 중 · ${mb} MB`);
+  $('#progStages').innerHTML = '';
+  uploadInChunks(file, mb).catch(err => showError(err.message));
+}
+function putChunk(url, blob, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', url);
+    xhr.upload.onprogress = e => e.lengthComputable && onProgress(e.loaded);
+    xhr.onload = () => xhr.status === 200 ? resolve(JSON.parse(xhr.responseText)) : reject(new Error((JSON.parse(xhr.responseText || '{}').detail) || `업로드 실패 (${xhr.status})`));
+    xhr.onerror = () => reject(new Error('업로드 중 연결이 끊어졌습니다.'));
+    xhr.send(blob);
+  });
+}
+async function uploadInChunks(file, mb) {
+  // 터널의 요청 크기 제한을 피하려고 조각으로 나눠 보낸다 (실패한 조각은 3번까지 재시도)
+  const init = await api('/api/upload/init', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename: file.name, size: file.size }) });
+  const size = init.chunk_bytes;
+  let offset = 0;
+  const show = sent => {
+    const f = sent / file.size;
+    $('#progBar').style.width = (f * 100).toFixed(1) + '%';
+    $('#progPct').textContent = (f * 100).toFixed(0) + '%';
+    $('#progStage').textContent = `업로드 중 · ${(sent / 1048576).toFixed(0)} / ${mb} MB`;
+  };
+  while (offset < file.size) {
+    const blob = file.slice(offset, offset + size);
+    let res, tries = 0;
+    for (;;) {
+      try { res = await putChunk(`/api/upload/${init.upload_id}/chunk?offset=${offset}`, blob, n => show(offset + n)); break; }
+      catch (e) { if (++tries >= 3) throw e; await new Promise(r => setTimeout(r, 1500)); }
+    }
+    offset = res.received;
+  }
+  $('#progStage').textContent = '업로드 완료 · 분석을 시작합니다';
+  const job = await api(`/api/upload/${init.upload_id}/complete`, { method: 'POST' });
+  watchJob(job.id, file.name);
+  loadHistory();
+}
+function showError(msg) {
+  $('#progressBox').hidden = false; $('#uploadBox').hidden = true;
+  $('#progErr').hidden = false; $('#progErr').textContent = msg; $('#progReset').hidden = false;
+}
+function watchJob(id, filename) {
+  clearInterval(pollTimer);
+  try { localStorage.setItem('loldov-active', id); } catch (e) {}
+  let ticks = 0;
+  const tick = async () => {
+    if (++ticks % 4 === 0 && !state.report) loadHistory();
+    try {
+      const job = await api(`/api/jobs/${id}`);
+      if (job.status === 'done') {
+        clearInterval(pollTimer);
+        try { localStorage.removeItem('loldov-active'); } catch (e) {}
+        showProgress(filename || job.filename, 'done', 1, '분석 완료! 리포트로 이동합니다');
+        loadHistory();
+        setTimeout(() => { location.hash = `#/job/${id}`; resetUpload(); }, 700);
+      } else if (job.status === 'error') {
+        clearInterval(pollTimer);
+        try { localStorage.removeItem('loldov-active'); } catch (e) {}
+        showProgress(filename || job.filename, job.stage, job.progress || 0, '실패');
+        showError(job.error || '분석에 실패했습니다.');
+        loadHistory();
+      } else {
+        showProgress(filename || job.filename, job.stage === 'queued' ? 'uploaded' : job.stage, job.progress || 0,
+          job.status === 'queued' ? '대기 중 (앞선 분석이 끝나면 시작합니다)' : job.stage_label);
+      }
+    } catch (e) { clearInterval(pollTimer); showError(e.message); }
+  };
+  tick(); pollTimer = setInterval(tick, 1500);
+}
+function fmtDate(iso) { return iso ? new Date(iso).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''; }
+async function loadHistory() {
+  const { jobs, samples } = await api('/api/jobs');
+  const STATUS = { done: '완료', error: '실패', running: '분석 중', queued: '대기' };
+  $('#jobList').innerHTML = jobs.length ? jobs.map(j => `
+    <a class="hist" href="${j.status === 'done' ? `#/job/${esc(j.id)}` : '#/'}" data-id="${esc(j.id)}" data-status="${j.status}">
+      <span class="name">${esc(j.filename)}</span><span class="when">${fmtDate(j.created_at)}</span>
+      <span class="status ${j.status}">${STATUS[j.status] || j.status}${j.status === 'running' ? ' ' + Math.round((j.progress || 0) * 100) + '%' : ''}</span></a>`).join('')
+    : '<div class="empty">아직 올린 영상이 없습니다.</div>';
+  $('#jobList').querySelectorAll('.hist').forEach(a => a.addEventListener('click', e => {
+    if (a.dataset.status === 'running' || a.dataset.status === 'queued') { e.preventDefault(); watchJob(a.dataset.id, a.querySelector('.name').textContent); scrollTo({ top: 0, behavior: 'smooth' }); }
+    if (a.dataset.status === 'error') { e.preventDefault(); watchJob(a.dataset.id, a.querySelector('.name').textContent); scrollTo({ top: 0, behavior: 'smooth' }); }
+  }));
+  $('#sampleList').innerHTML = samples.map(s => `<a class="hist" href="#/job/${esc(s.id)}"><span class="name">${esc(s.filename)}</span><span class="status done">완료</span></a>`).join('')
+    || '<div class="empty">예시 경기가 없습니다.</div>';
+}
+
+/* ---------- report ---------- */
+async function openReport(id) {
+  $('#homeView').hidden = true; $('#reportView').hidden = false;
+  $('#repTitle').textContent = '불러오는 중…';
+  $('#scenes').innerHTML = ''; state.qa = []; $('#qaLog').innerHTML = '';
+  try {
+    const job = await api(`/api/jobs/${id}`);
+    if (job.status !== 'done') { location.hash = '#/'; watchJob(id, job.filename); return; }
+    state.report = job.report; state.jobId = id; state.filter = 'all';
+    document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.filter === 'all'));
+    $('#repTitle').textContent = job.filename || job.report.name;
+    renderReport();
+    scrollTo({ top: 0 });
+  } catch (e) { $('#repTitle').textContent = e.message; }
+}
+function teams() {
+  const r = state.report, c = r.coaching || {};
+  const ally = c.ally || 'blue', enemy = ally === 'blue' ? 'red' : 'blue';
+  const known = !!c.known_team;
+  return { ally, enemy, known, name: t => known ? (t === ally ? '아군' : '상대') : (t === 'blue' ? '블루' : '레드') };
+}
+function renderReport() {
+  const r = state.report, c = r.coaching || {}, T = teams();
+  const [a, e] = c.final || [0, 0];
+  const p = r.player || {};
+  $('#repTiles').innerHTML = [
+    [T.known ? `<span class="dot ${T.ally}"></span>${T.ally === 'blue' ? '블루' : '레드'} 팀` : '판독 불가', T.known ? `분석 대상 팀 · ${T.ally === 'blue' ? '왼쪽' : '오른쪽'} ${p.slot + 1}번째` : '플레이어 팀'],
+    [`<span class="dot ${T.ally}"></span>${a} : ${e}<span class="dot ${T.enemy}" style="margin:0 0 0 5px"></span>`, `최종 킬 (${T.name(T.ally)} : ${T.name(T.enemy)})`],
+    [mmss(r.info.duration_sec), '영상 길이'],
+    [(c.scenes || []).filter(s => s.verdict === 'loss').length + '개', '교전 패배 장면'],
+    [(c.scenes || []).filter(s => s.verdict === 'win').length + '개', '교전 승리 장면'],
+    [(r.sync.clock_read_rate * 100).toFixed(1) + '%', '게임 시계 인식률'],
+  ].map(([v, l]) => `<div class="tile"><div class="v mono">${v}</div><div class="l">${l}</div></div>`).join('');
+
+  $('#repOverall').textContent = c.overall || '';
+  const chips = list => (list || []).map(n => `<span class="scene-chip" data-go="${n}">#${n}</span>`).join('');
+  $('#repImps').innerHTML = (c.improvements || []).map((m, i) => `
+    <div class="imp"><div class="t"><span class="n">${i + 1}</span>${esc(m.title)}</div><div class="d">${esc(m.detail)}</div>${chips(m.scenes)}</div>`).join('')
+    || '<div class="empty">뚜렷한 개선점을 찾지 못했습니다.</div>';
+  const li = xs => (xs || []).map(x => `<li>${esc(x)}</li>`).join('') || '<li>–</li>';
+  $('#repStrengths').innerHTML = li(c.strengths);
+  $('#repPractice').innerHTML = li(c.practice);
+  $('#repPhases').innerHTML = (c.phases || []).map(ph => `<li>${ph.phase} (${ph.range}) · <b class="mono" style="color:var(--text)">${ph.ally} : ${ph.enemy}</b> <span style="color:${ph.diff < 0 ? 'var(--loss)' : ph.diff > 0 ? 'var(--win)' : 'var(--text-3)'}">${ph.diff > 0 ? '+' : ''}${ph.diff}</span></li>`).join('') || '<li>–</li>';
+  $('#repSource').textContent = c.source === 'llm' ? '총평: Qwen이 장면 분석을 모아 작성' : '총평: 규칙 기반 (킬 시각·팀 정보). Qwen API 키를 설정하면 장면 화면까지 보고 코칭합니다.';
+  document.querySelectorAll('#repImps [data-go]').forEach(el => el.onclick = () => goScene(+el.dataset.go));
+
+  $('#legend').innerHTML = `<span><span class="sw" style="background:var(--signal)"></span>교전 신호</span>
+    <span><span class="sw" style="background:var(--band-hover)"></span>코칭 장면</span>
+    <span><span class="sw" style="border:1px dashed var(--text-3)"></span>킬 없는 교전</span>
+    <span><span class="dot ${T.ally}"></span>${T.name(T.ally)} 킬</span><span><span class="dot ${T.enemy}"></span>${T.name(T.enemy)} 킬</span>`;
+  renderChart(); renderScenes(); renderQA();
+}
+
+function finalScores(v) {
+  const s = { blue: 0, red: 0 };
+  for (const k of v.kills) s[k.team] = Math.max(s[k.team], k.score_after);
+  return s;
+}
+function renderChart() {
+  const v = state.report, T = teams(), svg = $('#chart');
+  const W = $('#chartWrap').clientWidth, narrow = W < 560;
+  const M = { l: 36, r: narrow ? 56 : 72, t: 22 };
+  const HA = narrow ? 110 : 140, GAP = 34, HB = narrow ? 110 : 130, AX = 22;
+  const H = M.t + HA + GAP + HB + AX;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('height', H);
+  const tMax = Math.max(v.series[v.series.length - 1][0], ...v.kills.map(k => k.game_sec), 60);
+  const x = t => M.l + (W - M.l - M.r) * (t / tMax);
+  const iMax = Math.max(0.5, ...v.series.map(p => p[1])) * 1.08;
+  const yA = val => M.t + HA - HA * (val / iMax);
+  const fs = finalScores(v), kMax = Math.max(5, fs.blue, fs.red);
+  const topB = M.t + HA + GAP, yB = val => topB + HB - HB * (val / kMax);
+  const coach = Object.fromEntries((v.coaching?.scenes || []).map(s => [s.rank, s]));
+  let s = `<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="${css('--text-3')}" stroke-opacity=".35" stroke-width="2"/></pattern></defs>`;
+  const stepMin = tMax > 900 ? 5 : 2, kStep = kMax > 20 ? 10 : 5;
+  s += '<g class="grid">';
+  for (let m = 0; m * 60 <= tMax; m += stepMin) s += `<line x1="${x(m * 60)}" x2="${x(m * 60)}" y1="${M.t}" y2="${M.t + HA}"/><line x1="${x(m * 60)}" x2="${x(m * 60)}" y1="${topB}" y2="${topB + HB}"/>`;
+  s += `<line x1="${M.l}" x2="${W - M.r}" y1="${M.t + HA}" y2="${M.t + HA}"/><line x1="${M.l}" x2="${W - M.r}" y1="${topB + HB}" y2="${topB + HB}"/>`;
+  for (let k = kStep; k <= kMax; k += kStep) s += `<line x1="${M.l}" x2="${W - M.r}" y1="${yB(k)}" y2="${yB(k)}" stroke-dasharray="2 4"/>`;
+  s += '</g><g class="axis">';
+  for (let m = 0; m * 60 <= tMax; m += stepMin) s += `<text x="${x(m * 60)}" y="${H - 4}" text-anchor="middle">${m}:00</text>`;
+  for (let k = 0; k <= kMax; k += kStep) s += `<text x="${M.l - 6}" y="${yB(k) + 4}" text-anchor="end">${k}</text>`;
+  s += `</g><text class="chart-title" x="${M.l}" y="${M.t - 8}">교전 신호 · 코칭 장면</text><text class="chart-title" x="${M.l}" y="${topB - 8}">누적 킬</text>`;
+  const top = v.scenes.filter(sc => sc.frames.length);
+  for (const sc of top) {
+    const x0 = x(Math.max(0, sc.start)), x1 = x(Math.min(tMax, sc.end));
+    s += `<rect class="${sc.event_free ? 'band-free' : 'band'}" data-rank="${sc.rank}" x="${x0}" y="${M.t}" width="${Math.max(2, x1 - x0)}" height="${HA}" rx="3"/>`;
+    if (!narrow || sc.rank <= 5) s += `<text class="band-label" x="${(x0 + x1) / 2}" y="${M.t + 11}" text-anchor="middle">#${sc.rank}</text>`;
+  }
+  const pts = v.series.map(p => `${x(p[0]).toFixed(1)},${yA(p[1]).toFixed(1)}`), sig = css('--signal');
+  s += `<path d="M${x(v.series[0][0])},${yA(0)} L${pts.join(' L')} L${x(v.series[v.series.length - 1][0])},${yA(0)} Z" fill="${sig}" fill-opacity=".14"/>`;
+  s += `<path d="M${pts.join(' L')}" fill="none" stroke="${sig}" stroke-width="1.5" stroke-linejoin="round"/>`;
+  const surface = css('--surface'), ends = [];
+  for (const team of ['blue', 'red']) {
+    const col = css('--' + team), ks = v.kills.filter(k => k.team === team);
+    let d = `M${x(0)},${yB(0)}`, last = 0;
+    for (const k of ks) { d += ` H${x(k.game_sec)} V${yB(k.score_after)}`; last = k.score_after; }
+    s += `<path d="${d} H${x(tMax)}" fill="none" stroke="${col}" stroke-width="2"/>`;
+    for (const k of ks) s += `<circle cx="${x(k.game_sec)}" cy="${yB(k.score_after)}" r="${k.kills > 1 ? 5 : 3.5}" fill="${col}" stroke="${surface}" stroke-width="2"/>`;
+    ends.push({ team, last, col, y: yB(last) });
+  }
+  if (Math.abs(ends[0].y - ends[1].y) < 14) { const hi = ends[0].y <= ends[1].y ? 0 : 1, mid = (ends[0].y + ends[1].y) / 2; ends[hi].y = mid - 7; ends[1 - hi].y = mid + 9; }
+  for (const e of ends) s += `<circle cx="${x(tMax) + 10}" cy="${yB(e.last)}" r="4" fill="${e.col}"/><text x="${x(tMax) + 18}" y="${e.y + 4}" fill="${css('--text')}" font-size="12" font-weight="700">${T.name(e.team)} ${e.last}</text>`;
+  s += `<line class="crosshair" id="xh" x1="0" x2="0" y1="${M.t}" y2="${topB + HB}" visibility="hidden"/><rect id="hit" x="${M.l}" y="${M.t}" width="${W - M.l - M.r}" height="${topB + HB - M.t}" fill="transparent"/>`;
+  svg.innerHTML = s;
+
+  const hit = $('#hit'), xh = $('#xh'), tip = $('#tooltip');
+  hit.addEventListener('mousemove', ev => {
+    const rect = svg.getBoundingClientRect();
+    const t = Math.min(tMax, Math.max(0, ((ev.clientX - rect.left) * (W / rect.width) - M.l) / (W - M.l - M.r) * tMax));
+    const p = v.series.reduce((a, b) => Math.abs(b[0] - t) < Math.abs(a[0] - t) ? b : a);
+    const sc = { blue: 0, red: 0 }; for (const k of v.kills) if (k.game_sec <= t) sc[k.team] = k.score_after;
+    const scene = top.find(z => t >= z.start && t <= z.end);
+    svg.querySelectorAll('.hl').forEach(e => e.classList.remove('hl'));
+    if (scene) svg.querySelector(`[data-rank="${scene.rank}"]`)?.classList.add('hl');
+    hit.style.cursor = scene ? 'pointer' : 'crosshair';
+    xh.setAttribute('x1', x(t)); xh.setAttribute('x2', x(t)); xh.setAttribute('visibility', 'visible');
+    tip.innerHTML = `<div class="tt-time">${mmss(t)}</div>
+      <div class="row"><span><span class="dot signal"></span>교전 신호</span><b>${p[1].toFixed(2)}</b></div>
+      <div class="row"><span><span class="dot ${T.ally}"></span>${T.name(T.ally)} 킬</span><b>${sc[T.ally]}</b></div>
+      <div class="row"><span><span class="dot ${T.enemy}"></span>${T.name(T.enemy)} 킬</span><b>${sc[T.enemy]}</b></div>
+      ${scene ? `<div class="row" style="margin-top:4px"><span>#${scene.rank} ${esc(VERDICT[coach[scene.rank]?.verdict] || '')}</span><b>${scene.game_time}</b></div>` : ''}`;
+    const px = ev.clientX - rect.left, tw = tip.offsetWidth;
+    tip.style.left = (px + 14 + tw > rect.width ? px - tw - 14 : px + 14) + 'px';
+    tip.style.top = (ev.clientY - rect.top - 20) + 'px'; tip.style.opacity = 1;
+    hit.onclick = scene ? () => goScene(scene.rank) : null;
+  });
+  hit.addEventListener('mouseleave', () => { tip.style.opacity = 0; xh.setAttribute('visibility', 'hidden'); svg.querySelectorAll('.hl').forEach(e => e.classList.remove('hl')); });
+}
+
+function goScene(rank) {
+  const c = (state.report.coaching?.scenes || []).find(s => s.rank === rank);
+  if (c && state.filter !== 'all' && state.filter !== c.verdict) setFilter('all');
+  const el = document.getElementById('scene-' + rank); if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600);
+}
+function setFilter(f) {
+  state.filter = f;
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.filter === f));
+  renderScenes();
+}
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => setFilter(b.dataset.filter)));
+
+function renderScenes() {
+  const r = state.report, T = teams();
+  const coach = Object.fromEntries((r.coaching?.scenes || []).map(s => [s.rank, s]));
+  const offset = r.sync.segments[0]?.offset || 0;
+  const list = r.scenes.filter(s => s.frames.length && coach[s.rank])
+    .filter(s => state.filter === 'all' || coach[s.rank].verdict === state.filter);
+  $('#scenes').innerHTML = list.map(sc => {
+    const c = coach[sc.rank];
+    const events = sc.events.map(e => {
+      if (e.source === 'video_score') return `<li><span class="t">${mmss(e.game_sec)}</span><span class="dot ${e.team}"></span>${T.name(e.team)} 킬 +${e.kills}</li>`;
+      if (e.source === 'visual') return `<li><span class="t">${mmss(e.video_sec - offset)}</span>킬 없는 교전 신호</li>`;
+      return `<li><span class="t">${e.game_sec != null ? mmss(e.game_sec) : ''}</span>${esc(e.type)}</li>`;
+    }).join('');
+    const vlmPart = c.source === 'vlm' ? `
+      ${c.situation ? `<div class="label-sm">장면 요약 <span class="vlm-tag">Qwen</span></div><p>${esc(c.situation)}</p>` : ''}
+      ${(c.mistakes || []).length ? `<div class="label-sm">아쉬운 판단</div><ul class="plain">${c.mistakes.map(m => `<li>${esc(m.description)} <span class="conf">${esc((m.evidence || []).join(', '))} · ${esc(m.confidence || '')}</span></li>`).join('')}</ul>` : ''}
+      ${(c.alternatives || []).length ? `<div class="label-sm">대안 행동</div><ul class="plain">${c.alternatives.map(m => `<li><b style="color:var(--text)">${esc(m.action)}</b> — ${esc(m.reason)}</li>`).join('')}</ul>` : ''}` : '';
+    return `<article class="scene v-${c.verdict}" id="scene-${sc.rank}">
+      <div class="scene-top"><span class="rank">#${sc.rank}</span><span class="scene-time mono">${esc(sc.game_time).replace('~', ' – ')}</span>
+        <span class="verdict ${c.verdict}">${VERDICT[c.verdict]}</span><span class="scene-title">${esc(c.title.split(' · ').slice(1).join(' · ') || '')}</span></div>
+      <div class="frames">${sc.frames.map((f, i) => `<figure data-rank="${sc.rank}" data-i="${i}"><img loading="lazy" src="${esc(f.url)}" alt="장면 ${sc.rank} 게임 ${esc(f.game_time)}"><figcaption>${esc(f.game_time)}</figcaption></figure>`).join('')}</div>
+      <div class="scene-body">
+        <div><div class="label-sm">코칭</div><p>${esc(c.detail)}</p>${vlmPart}</div>
+        <div><div class="label-sm">프레임에서 확인할 점</div><ul class="plain">${(c.checks || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+          <div class="label-sm">검출 이벤트</div><ul class="events">${events}</ul></div>
+      </div></article>`;
+  }).join('') || '<div class="card empty">해당하는 장면이 없습니다.</div>';
+  $('#scenes').querySelectorAll('figure').forEach(f => f.addEventListener('click', () => openLb(+f.dataset.rank, +f.dataset.i)));
+}
+
+/* Q&A */
+function renderQA() {
+  const on = CONFIG.vlm_available;
+  $('#qaSub').textContent = on ? '이 경기 리포트를 근거로 Qwen이 답합니다.' : '질의응답은 서버에 Qwen API 키(.env)가 설정되어야 사용할 수 있습니다.';
+  $('#qaInput').disabled = !on; $('#qaBtn').disabled = !on;
+  const qs = ['가장 먼저 고칠 점은?', '중반에 왜 밀렸을까?', '잘한 장면은 어디야?'];
+  $('#qaSuggest').innerHTML = on ? qs.map(q => `<button type="button">${q}</button>`).join('') : '';
+  $('#qaSuggest').querySelectorAll('button').forEach(b => b.onclick = () => { $('#qaInput').value = b.textContent; $('#qaForm').requestSubmit(); });
+}
+function pushMsg(role, content) {
+  state.qa.push({ role, content });
+  $('#qaLog').insertAdjacentHTML('beforeend', `<div class="msg ${role}">${esc(content)}</div>`);
+  $('#qaLog').scrollTop = $('#qaLog').scrollHeight;
+}
+$('#qaForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const q = $('#qaInput').value.trim(); if (!q) return;
+  const history = state.qa.slice();
+  pushMsg('user', q); $('#qaInput').value = ''; $('#qaBtn').disabled = true;
+  try {
+    const { answer } = await api(`/api/jobs/${state.jobId}/ask`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q, history }) });
+    pushMsg('assistant', answer);
+  } catch (err) { pushMsg('assistant', '⚠ ' + err.message); }
+  $('#qaBtn').disabled = false;
+});
+
+/* lightbox */
+const lb = { rank: 0, i: 0 };
+const lbFrames = () => state.report.scenes.find(s => s.rank === lb.rank).frames;
+function showLb() { const fs = lbFrames(), f = fs[lb.i]; $('#lbImg').src = f.url; $('#lbImg').alt = `장면 ${lb.rank} 프레임`; $('#lbCap').innerHTML = `장면 #${lb.rank} · 게임 <span class="mono">${esc(f.game_time)}</span> (${lb.i + 1}/${fs.length})`; }
+function openLb(rank, i) { lb.rank = rank; lb.i = i; showLb(); $('#lb').classList.add('open'); }
+const closeLb = () => $('#lb').classList.remove('open');
+const stepLb = d => { const n = lbFrames().length; lb.i = (lb.i + d + n) % n; showLb(); };
+$('#lbClose').onclick = closeLb;
+$('#lbPrev').onclick = e => { e.stopPropagation(); stepLb(-1); };
+$('#lbNext').onclick = e => { e.stopPropagation(); stepLb(1); };
+$('#lb').addEventListener('click', e => { if (e.target.id === 'lb') closeLb(); });
+document.addEventListener('keydown', e => {
+  if (!$('#lb').classList.contains('open')) return;
+  if (e.key === 'Escape') closeLb(); else if (e.key === 'ArrowLeft') stepLb(-1); else if (e.key === 'ArrowRight') stepLb(1);
+});
+
+/* routing */
+function route() {
+  const m = location.hash.match(/^#\/job\/(.+)$/);
+  if (m) return openReport(decodeURIComponent(m[1]));
+  state.report = null;
+  $('#reportView').hidden = true; $('#homeView').hidden = false;
+  loadHistory();
+}
+addEventListener('hashchange', route);
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => state.report && renderChart(), 120); });
+
+(async function init() {
+  try { CONFIG = await api('/api/config'); } catch (e) {}
+  $('#vlmNotice').innerHTML = CONFIG.vlm_available
+    ? '<b>Qwen VLM 연결됨</b> · 장면 화면을 보고 실수와 대안 행동까지 코칭합니다.'
+    : '<b>규칙 기반 코칭 모드</b> · 서버에 Qwen API 키가 없어 킬 흐름 기반으로 코칭합니다. 키를 설정하면 장면 화면 분석과 질의응답이 켜집니다.';
+  $('#dropHint').textContent += ` · 최대 ${CONFIG.max_upload_gb || 4}GB`;
+  setupUpload();
+  let active = null; try { active = localStorage.getItem('loldov-active'); } catch (e) {}
+  route();
+  if (active && !location.hash.startsWith('#/job/')) watchJob(active);
+})();
+</script>
+</body>
+</html>
