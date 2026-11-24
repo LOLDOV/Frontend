@@ -53,8 +53,6 @@ a { color: inherit; }
 .topbar .wrap { display: flex; align-items: center; justify-content: space-between; height: 56px; }
 .brand { font-weight: 900; letter-spacing: -.01em; text-decoration: none; display: flex; gap: 8px; align-items: center; }
 .brand b { color: var(--hero-accent); }
-.pill-btn { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); color: var(--hero-text); border-radius: 999px; padding: 5px 13px; cursor: pointer; font-size: 13px; }
-.pill-btn:hover { background: rgba(255,255,255,.15); }
 
 /* hero + upload */
 .hero { background: var(--hero-bg); color: var(--hero-text); padding: 36px 0 56px; position: relative; overflow: hidden; }
@@ -218,7 +216,6 @@ footer { color: var(--text-3); font-size: 12px; padding: 36px 0 48px; }
 <body>
 <div class="topbar"><div class="wrap">
   <a class="brand" href="#/"><b>LOLDOV 코치</b></a>
-  <button class="pill-btn" id="themeBtn" type="button">테마 전환</button>
 </div></div>
 
 <!-- 홈: 업로드 -->
@@ -346,19 +343,6 @@ const VERDICT = { loss: '교전 패배', win: '교전 승리', trade: '킬 교�
 let CONFIG = { vlm_available: false };
 let pollTimer = null;
 const state = { report: null, jobId: null, filter: 'all', qa: [] };
-
-/* theme */
-(function () {
-  let saved = null; try { saved = localStorage.getItem('loldov-theme'); } catch (e) {}
-  if (saved) document.documentElement.dataset.theme = saved;
-  $('#themeBtn').onclick = () => {
-    const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    const next = cur === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
-    try { localStorage.setItem('loldov-theme', next); } catch (e) {}
-    if (state.report) renderChart();
-  };
-})();
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
