@@ -700,7 +700,7 @@ let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() 
 (async function init() {
   try { CONFIG = await api('/api/config'); } catch (e) {}
   $('#vlmNotice').innerHTML = CONFIG.vlm_available
-    ? '<b>Qwen VLM 연결됨</b> · 장면 화면을 보고 실수와 대안 행동까지 코칭합니다.'
+    ? '장면 화면을 보고 실수와 대안 행동까지 코칭합니다.'
     : '<b>규칙 기반 코칭 모드</b> · 서버에 Qwen API 키가 없어 킬 흐름 기반으로 코칭합니다. 키를 설정하면 장면 화면 분석과 질의응답이 켜집니다.';
   $('#dropHint').textContent += ` · 최대 ${CONFIG.max_upload_gb || 4}GB`;
   setupUpload();
