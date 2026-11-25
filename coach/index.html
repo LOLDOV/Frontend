@@ -514,7 +514,7 @@ function renderReport() {
   $('#repStrengths').innerHTML = li(c.strengths);
   $('#repPractice').innerHTML = li(c.practice);
   $('#repPhases').innerHTML = (c.phases || []).map(ph => `<li>${ph.phase} (${ph.range}) · <b class="mono" style="color:var(--text)">${ph.ally} : ${ph.enemy}</b> <span style="color:${ph.diff < 0 ? 'var(--loss)' : ph.diff > 0 ? 'var(--win)' : 'var(--text-3)'}">${ph.diff > 0 ? '+' : ''}${ph.diff}</span></li>`).join('') || '<li>–</li>';
-  $('#repSource').textContent = c.source === 'llm' ? '총평: Qwen이 장면 분석을 모아 작성' : '총평: 규칙 기반 (킬 시각·팀 정보). Qwen API 키를 설정하면 장면 화면까지 보고 코칭합니다.';
+  $('#repSource').textContent = c.source === 'llm' ? '' : '총평: 규칙 기반 (킬 시각·팀 정보). API 키를 설정하면 장면 화면까지 보고 코칭합니다.';
   document.querySelectorAll('#repImps [data-go]').forEach(el => el.onclick = () => goScene(+el.dataset.go));
 
   $('#legend').innerHTML = `<span><span class="sw" style="background:var(--signal)"></span>교전 신호</span>
@@ -628,7 +628,7 @@ function renderScenes() {
       return `<li><span class="t">${e.game_sec != null ? mmss(e.game_sec) : ''}</span>${esc(e.type)}</li>`;
     }).join('');
     const vlmPart = c.source === 'vlm' ? `
-      ${c.situation ? `<div class="label-sm">장면 요약 <span class="vlm-tag">Qwen</span></div><p>${esc(c.situation)}</p>` : ''}
+      ${c.situation ? `<div class="label-sm">장면 요약</div><p>${esc(c.situation)}</p>` : ''}
       ${(c.mistakes || []).length ? `<div class="label-sm">아쉬운 판단</div><ul class="plain">${c.mistakes.map(m => `<li>${esc(m.description)} <span class="conf">${esc((m.evidence || []).join(', '))} · ${esc(m.confidence || '')}</span></li>`).join('')}</ul>` : ''}
       ${(c.alternatives || []).length ? `<div class="label-sm">대안 행동</div><ul class="plain">${c.alternatives.map(m => `<li><b style="color:var(--text)">${esc(m.action)}</b> — ${esc(m.reason)}</li>`).join('')}</ul>` : ''}` : '';
     return `<article class="scene v-${c.verdict}" id="scene-${sc.rank}">
@@ -647,7 +647,7 @@ function renderScenes() {
 /* Q&A */
 function renderQA() {
   const on = CONFIG.vlm_available;
-  $('#qaSub').textContent = on ? '이 경기 리포트를 근거로 Qwen이 답합니다.' : '질의응답은 서버에 Qwen API 키(.env)가 설정되어야 사용할 수 있습니다.';
+  $('#qaSub').textContent = on ? '' : '질의응답은 서버에 API 키(.env)가 설정되어야 사용할 수 있습니다.';
   $('#qaInput').disabled = !on; $('#qaBtn').disabled = !on;
   const qs = ['가장 먼저 고칠 점은?', '중반에 왜 밀렸을까?', '잘한 장면은 어디야?'];
   $('#qaSuggest').innerHTML = on ? qs.map(q => `<button type="button">${q}</button>`).join('') : '';
@@ -701,7 +701,7 @@ let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() 
   try { CONFIG = await api('/api/config'); } catch (e) {}
   $('#vlmNotice').innerHTML = CONFIG.vlm_available
     ? '장면 화면을 보고 실수와 대안 행동까지 코칭합니다.'
-    : '<b>규칙 기반 코칭 모드</b> · 서버에 Qwen API 키가 없어 킬 흐름 기반으로 코칭합니다. 키를 설정하면 장면 화면 분석과 질의응답이 켜집니다.';
+    : '<b>규칙 기반 코칭 모드</b> · 서버에 API 키가 없어 킬 흐름 기반으로 코칭합니다. 키를 설정하면 장면 화면 분석과 질의응답이 켜집니다.';
   $('#dropHint').textContent += ` · 최대 ${CONFIG.max_upload_gb || 4}GB`;
   setupUpload();
   let active = null; try { active = localStorage.getItem('loldov-active'); } catch (e) {}
