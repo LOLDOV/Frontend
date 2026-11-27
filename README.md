@@ -16,6 +16,8 @@ report/template.html   # 정적 리포트 틀 (AI의 report/build_site.py 가 �
 다크/라이트 모드는 시스템 설정을 따르고, 모바일 화면에도 맞춘다.
 
 ## 화면
+![Uploading image.png…]()
+
 
 **홈**
 
