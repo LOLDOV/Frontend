@@ -75,6 +75,16 @@ a { color: inherit; }
 .drop .choose { display: inline-block; margin-top: 14px; background: var(--hero-accent); color: #0a151b; font-weight: 700; border-radius: 999px; padding: 8px 20px; }
 .notice { margin-top: 14px; font-size: 13px; color: #b9c3c3; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 10px; padding: 10px 14px; }
 .notice b { color: var(--hero-accent); }
+.riot { margin-top: 14px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 14px; }
+.riot .title { font-size: 14px; font-weight: 700; color: var(--hero-text); }
+.riot .title small { font-weight: 400; color: #9fb0b0; margin-left: 6px; }
+.riot .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.riot label { display: grid; gap: 4px; font-size: 12px; color: #b9c3c3; }
+.riot input { border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.25); color: var(--hero-text); border-radius: 10px; padding: 9px 12px; font: inherit; font-size: 14px; min-width: 0; }
+.riot input:focus { outline: 2px solid rgba(198,243,107,.5); outline-offset: 1px; border-color: transparent; }
+.riot input:disabled { opacity: .5; }
+.riot .hint { font-size: 12px; color: #9fb0b0; margin-top: 8px; }
+@media (max-width: 560px) { .riot .fields { grid-template-columns: 1fr; } }
 
 /* progress card */
 .progress-card { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: 18px; padding: 22px; }
@@ -188,6 +198,15 @@ ul.plain li { margin: 3px 0; }
 .events .t { font-family: 'JetBrains Mono', monospace; color: var(--text); margin-right: 8px; }
 .vlm-tag { font-size: 11px; font-weight: 700; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0 7px; margin-left: 6px; }
 .conf { font-size: 11px; color: var(--text-3); }
+.death { border-left-color: var(--text-2); }
+.death.v-improve { border-left-color: var(--loss); } .death.v-best { border-left-color: var(--win); }
+.verdict.improve { color: var(--loss); } .verdict.best { color: var(--win); } .verdict.check { color: var(--text-2); }
+.frames.f8 { grid-template-columns: repeat(8, 1fr); }
+.frames a { display: block; cursor: zoom-in; }
+.evidence { font-size: 12px; color: var(--text-3); margin: 0; padding-left: 16px; }
+.evidence li { margin: 2px 0; }
+.death-note { font-size: 14px; color: var(--text-2); }
+@media (max-width: 560px) { .frames.f8 { grid-template-columns: repeat(4, 1fr); } }
 
 /* Q&A */
 .qa-log { display: grid; gap: 10px; margin-bottom: 12px; max-height: 420px; overflow-y: auto; }
@@ -250,6 +269,14 @@ footer { color: var(--text-3); font-size: 12px; padding: 36px 0 48px; }
         <div class="small" id="dropHint">MP4 · WEBM · MKV · MOV · 롤 클라이언트 리플레이를 녹화한 화면 (게임 시계가 보여야 합니다)</div>
         <span class="choose">영상 파일 선택</span>
       </label>
+      <div class="riot" id="riotBox">
+        <div class="title">데스 장면 코칭<small>선택 · 입력하면 Riot 경기 기록으로 내가 죽은 장면을 따로 코칭합니다</small></div>
+        <div class="fields">
+          <label>경기 ID<input id="matchId" placeholder="예) KR_1234567890" autocomplete="off" spellcheck="false"></label>
+          <label>Riot ID<input id="riotId" placeholder="예) 닉네임#KR1" autocomplete="off" spellcheck="false"></label>
+        </div>
+        <div class="hint" id="riotHint">경기 ID는 OP.GG 등 전적 사이트의 경기 주소나 롤 클라이언트 전적에서 확인할 수 있습니다. 둘 다 비우면 기본 분석만 합니다.</div>
+      </div>
       <div class="notice" id="vlmNotice"></div>
     </div>
 
@@ -330,6 +357,11 @@ footer { color: var(--text-3); font-size: 12px; padding: 36px 0 48px; }
     </div>
     <div class="scenes" id="scenes"></div>
 
+    <section id="deathSection" hidden>
+      <div class="scene-head"><div><h2 style="margin:0">데스 장면 코칭</h2><div class="sub" style="margin:0">Riot 경기 기록으로 찾은 내가 죽은 장면 · 기록·패치 문서로 확인되지 않은 주장은 숨깁니다</div></div></div>
+      <div class="scenes" id="deaths"></div>
+    </section>
+
     <section style="padding-top:28px">
       <div class="card">
         <h2>코치에게 질문하기</h2>
@@ -359,10 +391,11 @@ const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const mmss = sec => { sec = Math.max(0, Math.round(sec)); return `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`; };
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const STAGES = [['uploaded', '업로드'], ['scan', '영상 스캔'], ['player', '플레이어 팀 판별'], ['scenes', '장면 선정'], ['frames', '프레임 추출'], ['vlm', 'VLM 분석'], ['coach', '코칭 작성']];
+const STAGES = [['uploaded', '업로드'], ['scan', '영상 스캔'], ['player', '플레이어 팀 판별'], ['scenes', '장면 선정'], ['frames', '프레임 추출'], ['vlm', 'VLM 분석'], ['coach', '코칭 작성'], ['death', '데스 코칭']];
 const VERDICT = { loss: '교전 패배', win: '교전 승리', trade: '킬 교환', skirmish: '킬 없는 교전' };
 let CONFIG = { vlm_available: false };
 let pollTimer = null;
+let withDeath = false;  // 이번 분석에 데스 장면 코칭 단계가 있는지
 const state = { report: null, jobId: null, filter: 'all', qa: [] };
 
 async function api(path, opts) {
@@ -392,7 +425,7 @@ function showProgress(file, stage, frac, label) {
   $('#progPct').textContent = (frac * 100).toFixed(0) + '%';
   $('#progStage').textContent = label;
   const idx = STAGES.findIndex(s => s[0] === stage);
-  $('#progStages').innerHTML = STAGES.filter(s => s[0] !== 'vlm' || CONFIG.vlm_available).map(([k, l]) => {
+  $('#progStages').innerHTML = STAGES.filter(s => (s[0] !== 'vlm' || CONFIG.vlm_available) && (s[0] !== 'death' || withDeath)).map(([k, l]) => {
     const i = STAGES.findIndex(s => s[0] === k);
     const cls = stage === 'done' || i < idx ? 'done' : i === idx ? 'now' : '';
     return `<li class="${cls}"><span class="mk">${cls === 'done' ? '✓' : ''}</span>${l}</li>`;
@@ -402,10 +435,13 @@ function showProgress(file, stage, frac, label) {
 function startUpload(file) {
   const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
   if (!['.mp4', '.webm', '.mkv', '.mov'].includes(ext)) { alert('MP4, WEBM, MKV, MOV 영상만 올릴 수 있습니다.'); return; }
+  const riot = { match_id: $('#matchId').value.trim(), riot_id: $('#riotId').value.trim() };
+  if ((riot.match_id || riot.riot_id) && !(riot.match_id && riot.riot_id)) { alert('데스 장면 코칭을 하려면 경기 ID와 Riot ID를 둘 다 입력하세요. 기본 분석만 하려면 둘 다 비워 두세요.'); return; }
+  withDeath = !!riot.match_id;
   const mb = (file.size / 1024 / 1024).toFixed(0);
   showProgress(file.name, 'uploaded', 0, `업로드 중 · ${mb} MB`);
   $('#progStages').innerHTML = '';
-  uploadInChunks(file, mb).catch(err => showError(err.message));
+  uploadInChunks(file, mb, riot).catch(err => showError(err.message));
 }
 function putChunk(url, blob, onProgress) {
   return new Promise((resolve, reject) => {
@@ -417,10 +453,10 @@ function putChunk(url, blob, onProgress) {
     xhr.send(blob);
   });
 }
-async function uploadInChunks(file, mb) {
+async function uploadInChunks(file, mb, riot) {
   // 터널의 요청 크기 제한을 피하려고 조각으로 나눠 보낸다 (실패한 조각은 3번까지 재시도)
   const init = await api('/api/upload/init', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ filename: file.name, size: file.size }) });
+    body: JSON.stringify({ filename: file.name, size: file.size, ...riot }) });
   const size = init.chunk_bytes;
   let offset = 0;
   const show = sent => {
@@ -455,6 +491,7 @@ function watchJob(id, filename) {
     if (++ticks % 4 === 0 && !state.report) loadHistory();
     try {
       const job = await api(`/api/jobs/${id}`);
+      withDeath = !!job.match_id;
       if (job.status === 'done') {
         clearInterval(pollTimer);
         try { localStorage.removeItem('loldov-active'); } catch (e) {}
@@ -517,7 +554,7 @@ async function openReport(id) {
   try {
     const job = await api(`/api/jobs/${id}`);
     if (job.status !== 'done') { location.hash = '#/'; watchJob(id, job.filename); return; }
-    state.report = job.report; state.jobId = id; state.filter = 'all';
+    state.report = job.report; state.jobId = id; state.filter = 'all'; state.job = job;
     document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.filter === 'all'));
     $('#repTitle').textContent = job.filename || job.report.name;
     renderReport();
@@ -559,7 +596,7 @@ function renderReport() {
     <span><span class="sw" style="background:var(--band-hover)"></span>코칭 장면</span>
     <span><span class="sw" style="border:1px dashed var(--text-3)"></span>킬 없는 교전</span>
     <span><span class="dot ${T.ally}"></span>${T.name(T.ally)} 킬</span><span><span class="dot ${T.enemy}"></span>${T.name(T.enemy)} 킬</span>`;
-  renderChart(); renderScenes(); renderQA();
+  renderChart(); renderScenes(); renderDeaths(); renderQA();
 }
 
 function finalScores(v) {
@@ -682,6 +719,39 @@ function renderScenes() {
   $('#scenes').querySelectorAll('figure').forEach(f => f.addEventListener('click', () => openLb(+f.dataset.rank, +f.dataset.i)));
 }
 
+const DEATH_VERDICT = { improve: '개선 필요', check: '판단 근거 부족', best: '잘 대처함' };
+function renderDeaths() {
+  const list = state.report.deaths, job = state.job || {};
+  const failed = job.death_status === 'error';
+  $('#deathSection').hidden = !list && !failed;
+  if (!list) { $('#deaths').innerHTML = failed ? `<div class="card death-note">데스 장면 코칭에 실패해 기본 리포트만 보여 드립니다.<br><span class="conf">${esc(job.death_error || '')}</span></div>` : ''; return; }
+  const shown = list.filter(d => !d.skipped);
+  const missed = list.length - shown.length;
+  $('#deaths').innerHTML = (shown.map(d => {
+    const c = d.coaching;
+    const evidence = [...Object.entries(d.records || {}), ...Object.entries(d.docs || {})];
+    return `<article class="scene death v-${c.verdict}">
+      <div class="scene-top"><span class="rank">☠</span><span class="scene-time mono">${esc(d.game_time || '')}</span>
+        <span class="verdict ${c.verdict}">${DEATH_VERDICT[c.verdict] || c.verdict}</span><span class="scene-title">${esc(c.title)}</span></div>
+      <div class="frames f8">${d.frames.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener"><img loading="lazy" src="${esc(u)}" alt="데스 ${esc(d.game_time || '')} 프레임 F${i + 1}"></a>`).join('')}</div>
+      <div class="scene-body">
+        <div>
+          ${c.situation ? `<div class="label-sm">상황</div><p>${esc(c.situation)}</p>` : ''}
+          ${c.cause ? `<div class="label-sm">사망 원인</div><p>${esc(c.cause)}</p>` : ''}
+          ${c.claims.length ? `<div class="label-sm">근거</div><ul class="plain">${c.claims.map(x => `<li>${esc(x.text)} <span class="conf">${esc(x.refs.join(', '))}</span></li>`).join('')}</ul>` : ''}
+          ${c.alternatives.length ? `<div class="label-sm">대안 행동</div><ul class="plain">${c.alternatives.map(a => `<li><b style="color:var(--text)">${esc(a.action)}</b> — ${esc(a.reason)}</li>`).join('')}</ul>` : ''}
+        </div>
+        <div>
+          ${d.killer ? `<div class="label-sm">처치한 챔피언</div><p>${esc(d.killer)}</p>` : ''}
+          ${(c.checks || []).length ? `<div class="label-sm">영상에서 확인할 점</div><ul class="plain">${c.checks.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+          ${evidence.length ? `<div class="label-sm">근거 자료 (R: Riot 기록 · D: 패치 문서 · F: 프레임)</div><ul class="evidence">${evidence.map(([k, v]) => `<li><b>${esc(k)}</b> ${esc(v)}</li>`).join('')}</ul>` : ''}
+          ${d.held ? `<div class="conf" style="margin-top:8px">근거가 확인되지 않은 주장 ${d.held}개는 숨겼습니다.</div>` : ''}
+        </div>
+      </div></article>`;
+  }).join('') || '<div class="card death-note">영상 안에서 찾은 데스 장면이 없습니다.</div>')
+    + (missed ? `<p class="conf">경기 기록의 데스 ${missed}개는 영상에 담기지 않아 건너뛰었습니다.</p>` : '');
+}
+
 /* Q&A */
 function renderQA() {
   const on = CONFIG.vlm_available;
@@ -747,6 +817,10 @@ let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() 
     ? '장면 화면을 보고 실수와 대안 행동까지 코칭합니다.'
     : '<b>규칙 기반 코칭 모드</b> · 서버에 API 키가 없어 킬 흐름 기반으로 코칭합니다. 키를 설정하면 장면 화면 분석과 질의응답이 켜집니다.';
   $('#dropHint').textContent += ` · 최대 ${CONFIG.max_upload_gb || 4}GB`;
+  if (!CONFIG.death_available) {
+    $('#matchId').disabled = $('#riotId').disabled = true;
+    $('#riotHint').textContent = '지금은 서버에 Riot API 키가 없어 사용할 수 없습니다. 영상만 올리면 기본 분석을 합니다.';
+  }
   setupUpload();
   let active = null; try { active = localStorage.getItem('loldov-active'); } catch (e) {}
   route();
